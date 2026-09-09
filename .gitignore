@@ -1,0 +1,8 @@
+node_modules/
+lib/
+dist/
+*.tsbuildinfo
+.superpowers/
+.vite/
+*.log
+Thumbs.db
