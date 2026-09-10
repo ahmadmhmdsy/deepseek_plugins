@@ -6,3 +6,4 @@ dist/
 .vite/
 *.log
 Thumbs.db
+scripts/.dsh-target.txt
