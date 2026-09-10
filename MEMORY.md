@@ -39,6 +39,16 @@ durable, reusable lessons and cross-checkout facts.
   WANTED/WORKSPACE_PACKAGES equal when adding packages.
 - `dsh-client-store` and `dsh-client-ui-renderer` exist only on the fork
   (verified 2026-09-10); the link script treats them as optional.
+- The typecheck facade compiles VENDOR sources into the program: type-only `@deepseek-ai/*`
+  imports still resolve real files, so keep root-tsconfig flag parity with the vendor's own
+  tsconfig (§5.16 relaxations; cordis compiles with noImplicitAny/noImplicitThis/
+  strictFunctionTypes/noUncheckedIndexedAccess/exactOptionalPropertyTypes/noImplicitOverride/
+  noUnused* relaxed) and ambient-shim bundler-only imports (`*.module.css` →
+  `web-compact-config/src/css-modules.d.ts`). (2026-09-10)
+- Out-of-tree client-bundle builds: `node <checkout>\node_modules\tsdown\dist\run.mjs
+  -c tsdown.config.ts` (tsdown 0.22.2, `deps.neverBundle/alwaysBundle`); the junction farm
+  exposes `tsdown` so the config's own import resolves. `lib/client.js` is gitignored —
+  rebuild after checkout, and it must EXIST before the first patched boot. (2026-09-10)
 
 ## 2. Cross-checkout API drift (verified by hash + diff, 2026-09-10)
 

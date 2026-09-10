@@ -4,7 +4,7 @@ TASKS.md owns the **live status**; [HANDOFF.md](./HANDOFF.md) owns the narrative
 and evidence; the plan (`docs/superpowers/plans/2026-09-10-auto-compact-handoff.md`)
 owns the approved task definitions.
 
-**Last updated:** 2026-09-10 · **Active front:** M3 (Tasks 11-14) · resume at **Task 12, Step 12-T1 (tsc)**.
+**Last updated:** 2026-09-10 · **Active front:** M3 (Tasks 13-14) · resume at **Task 13** (patch entry → composition check → NEEDS_USER_DECISION junction).
 Statuses: `pending` / `in_progress` / `blocked` / `done` (done = finished AND validated).
 User-gated tasks say so explicitly.
 
@@ -24,25 +24,11 @@ User-gated tasks say so explicitly.
 | Doc tuning: CLAUDE.md/AGENTS.md rewritten for this project; TASKS/MEMORY/ENVIRONMENT created | `cd2035e` | 2026-09-10 |
 | Plan Task 11 — M3 host bridge (web-compact-config) | `c299596` | 71/71 (10 files) on RUN; 12 bridge tests incl. 6 service-level integration tests over the real FileSettingsProvider |
 | Task 11 deviations ledger + M3 discoveries | `89291e7` | HANDOFF §5.9-5.15, §6b |
+| Plan Task 12 — M3 client card (web-compact-config) | `a23ca4d` | tsc clean; 82/82 (11 files) on RUN; bundle 43.11 kB (loader banner, `react/jsx-runtime` external); deviations §5.16-5.18 |
 
 ## Next (queued — approved plan Tasks 11-14)
 
-- **Task 12 — M3 client card** `in_progress` — plan lines 2457-2599. Resume
-  checklist (full detail: [HANDOFF.md](./HANDOFF.md) §6b):
-  - [x] Preconditions verified on RUN (settingsScope bind, card pattern, bundle contract, purity gate)
-  - [x] `src/client/{store,controller}.ts, Card.tsx, index.ts` + `tsdown.config.ts` written
-  - [x] `tests/controller.spec.ts` — 11/11 green
-  - [x] Bundle built + verified (loader banner; `react/jsx-runtime` external)
-  - [x] Toolchain: junction `dsh-client-runtime`, `@types/node`, tsconfig paths (baseUrl dropped for TS 6)
-  - [ ] **tsc --noEmit clean** ← RESUME HERE — fix list in HANDOFF §6b Step
-        12-T1 (Card.tsx Checkbox onEdit signature + onClick bug + controller
-        isDirty; relax facade flags to match vendor/cordis's own relaxed flags
-        — deviation §5.16 candidate)
-  - [ ] Full suite green (expect 82/82, 11 files)
-  - [ ] Rebuild bundle (lib/ is gitignored)
-  - [ ] Commit `feat(web-compact-config): client card with staged form and loader artifact`
-        + docs commit (deviations §5.16-5.18)
-- **Task 13 — M3 wiring + GUI verification** `pending` — plan lines 2599-2615:
+- **Task 13 — M3 wiring + GUI verification** `in_progress` (resume at the patch entry) — plan lines 2599-2615:
   extend `cordis.patch.yml`, composition check, GUI check. GUI verification is
   **user-gated** (needs a running web harness; do NOT boot one from a session).
   NEW (HANDOFF §5.15): the card only ships if the package is resolvable by name

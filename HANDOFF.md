@@ -110,6 +110,10 @@ Expected suite (post-M2, verified 2026-09-10 on BOTH checkouts): **9 spec files 
 14. **Task 11 tests above the plan minimum**: bridge tests boot the REAL FileSettingsProvider (chokidar) and drive writes via `ctx.settings.update/replace` — boot adopt + normalize, card write→file, external re-adopt, invalid-edit keeps last good, cross-field refusal, fresh-install semantics — while keeping plan Step 11.2's three required assertions.
 15. **Client bundle delivery for out-of-tree plugins (Task 13 input, NEEDS_USER_DECISION)**: `ClientModuleRegistry.resolveMeta` resolves each loader entry's package via `require.resolve(name + '/package.json')` anchored at the profile dir; out-of-tree packages are NOT resolvable → negative verdict → no boot row → the card never loads. Delivery requires a junction `$DSH_HOME/profiles/node_modules/web-compact-config` → the workspace package (the healer never deletes foreign links) or a profile dependency + pnpm install. Also: a missing `lib/client.js` at boot throws MissingClientBundleError (loud boot failure) — build the bundle BEFORE booting with the patch entry.
 
+16. **Task 12 typecheck-facade parity (§5.16)**: the facade compiles vendor sources into the program (type-only `@deepseek-ai/*` imports still resolve real files), so the root tsconfig must match the flags those sources compile under — copied vendor/cordis's own relaxations (`noImplicitAny/noImplicitThis/strictFunctionTypes/noUncheckedIndexedAccess/exactOptionalPropertyTypes/noImplicitOverride/noUnusedLocals/noUnusedParameters` = false). Vendor client files also import `*.module.css` (bundler-resolved only) — `web-compact-config/src/css-modules.d.ts` ambient-shims them for tsc. My own sources were written full-strict and stay clean.
+17. **Task 12 card save protocol (§5.17)**: the client `SettingsScope` exposes per-field path ops only (`set(field,value)`/`unset(field)`), so the card stages and writes WHOLE sections (one field whose value is an object) — the plan's client `scope.update(patch)` does not exist. Reset = staged `unset` (pending clear) so the field re-inherits schema defaults; every write is read back from the snapshot's user layer (landed check); a save that did not land keeps its drafts.
+18. **Task 12 bundler API (§5.18)**: tsdown 0.22.2 deprecates `external/noExternal` in favor of `deps: { neverBundle, alwaysBundle }` (the plan's snippet already used the modern form). Verified invocation: `node <checkout>\node_modules\tsdown\dist\run.mjs -c tsdown.config.ts`; the config's own `import 'tsdown'` resolves through the junction farm.
+
 ## 6. In-flight state — CLOSED (was the resume point)
 
 - [x] M2 committed → `5bbbd82` (includes the trigger-shorthand deviation §5.7).
@@ -119,17 +123,30 @@ Expected suite (post-M2, verified 2026-09-10 on BOTH checkouts): **9 spec files 
 - [x] HANDOFF committed → `dc49f80`.
 - Target record = RUN checkout (`scripts/.dsh-target.txt`).
 
-**Resume point: Task 12** (M3 client card — see §7 and [TASKS.md](./TASKS.md)). Task 11 is done (commit c299596, 71/71 on RUN).
+**Resume point: Task 13** (M3 wiring + GUI gate — see §7 and [TASKS.md](./TASKS.md)). Task 12 is done (commit a23ca4d, 82/82 on RUN).
 
-## 6b. In-flight state — OPEN (resume here: Task 12, client card)
+## 6b. Task 12 — DONE (was the in-flight pause; finished on resume, commit a23ca4d)
 
 **Written:** 2026-09-10, mid-Task-12, by the M3 session (goal: M3 web settings
 card). This is the exact pause point; a fresh agent should `git log --oneline -4`
 to confirm nothing moved, then continue at Step 12-T1 below.
 
+### Finished on resume (2026-09-10, same session)
+- **12-T1 tsc clean (exit 0).** Checkbox `onEdit` unified on `(text: string) => void` (one
+  declaration fix cleared all four call sites); `onClick={sectionReset('auto')}` de-inlined;
+  `controller.ts` gained a private `isDirty` getter now shared by save() and projection().
+  Facade: root tsconfig relaxed to the flags vendor/cordis itself compiles under (§5.16) and
+  `src/css-modules.d.ts` ambient-shims vendor `*.module.css` imports (folded into §5.16).
+- **12-T2 full suite: 82/82 (11 files), exit 0** on RUN.
+- **12-T3 bundle rebuilt:** `lib/client.js` 43.11 kB; first line `window.__ModuleLoader__.load({`;
+  `react/jsx-runtime` still external. Verified build cmd (tsdown 0.22.2, cwd = web-compact-config):
+  `node 'D:\deepseek_harness\deepseek-harness\node_modules\tsdown\dist\run.mjs' -c tsdown.config.ts`.
+- **12-T4 commit `a23ca4d`** — 9 files, 1572 insertions (client card + toolchain), tree clean.
+- **12-T5 ledger extended to §5.16-5.18** + TASKS + MEMORY (this docs commit).
+
 ### Already committed
 - Task 11 (host bridge): code `c299596`, docs `89291e7`. Suite was 71/71 (10 files) on RUN at that point.
-- Deviations ledger current through §5.15. Target record = RUN (`scripts/.dsh-target.txt`).
+- Deviations ledger was current through §5.15 at the pause; extended to §5.18 on resume. Target record = RUN (`scripts/.dsh-target.txt`).
 
 ### Task 12 — written and verified so far (UNCOMMITTED)
 - Code: `web-compact-config/src/client/store.ts` (local SnapshotStore-like),
@@ -152,7 +169,7 @@ to confirm nothing moved, then continue at Step 12-T1 below.
   prefixed `../deepseek-harness/`; junctions RELINKED (target still RUN).
 
 ### Step-by-step resume checklist (Task 12 finish line)
-- [ ] **12-T1 — make tsc clean.** Run
+- [x] **12-T1 — tsc clean (exit 0).** Ran
       `node 'D:\deepseek_harness\deepseek-harness\node_modules\typescript\bin\tsc' --noEmit -p web-compact-config/tsconfig.json`
       (cwd = workspace). Known remaining errors, in two buckets:
       1. MY files (small, exact fixes):
@@ -174,16 +191,16 @@ to confirm nothing moved, then continue at Step 12-T1 below.
          copy those relaxations into the root tsconfig (they only REMOVE
          errors; my sources were written under full strict and still compile),
          then re-run tsc until only zero errors remain.
-- [ ] **12-T2 — full suite.** Expect **82/82 (11 files)**: 71 previous + 11
+- [x] **12-T2 — full suite.** Got **82/82 (11 files), exit 0**: 71 previous + 11
       controller. If a bridge test flakes on timing, see MEMORY §3 (wait for the
       boot-normalized shape before editing the config file).
-- [ ] **12-T3 — rebuild the bundle** (cmd above) and re-verify the banner +
+- [x] **12-T3 — rebuilt the bundle** (43.11 kB) and re-verified the banner +
       `require("react/jsx-runtime")` line.
-- [ ] **12-T4 — commit code**:
+- [x] **12-T4 — committed** (a23ca4d, 9 files, 1572 insertions). Planned subject:
       `feat(web-compact-config): client card with staged form and loader artifact`
       (files: web-compact-config/{package.json,tsconfig.json,tsdown.config.ts},
       src/**, tests/controller.spec.ts, scripts/link-node-modules.mjs, tsconfig.json).
-- [ ] **12-T5 — extend the deviations ledger + TASKS + MEMORY** (commit docs):
+- [x] **12-T5 — extended the deviations ledger + TASKS + MEMORY** (commit docs):
       §5.16 typecheck-flag relaxation; §5.17 card save protocol (client
       `SettingsScope` has per-field path ops only → the card stages WHOLE
       sections; plan's `scope.update(patch)` does not exist client-side);
@@ -209,7 +226,7 @@ to confirm nothing moved, then continue at Step 12-T1 below.
 ## 7. Remaining TODO (Tasks 11-14)
 
 - [x] **Task 11 — M3 host bridge** — DONE 2026-09-10, commit `c299596`. Settings seam verified on RUN first (register options `{base, applies, validate}`, scope `get/watch/update/replace`; agent-presets is the in-tree precedent). Bridge: no `base` layer (deviation §5.10), echo-guarded commit watcher, debounced dir re-adopt with refusal warnings. Tests: 12 (schema defaults/refusals, echo-guard, 6 service-level integration tests over the real FileSettingsProvider). Suite 71/71 (10 files) on RUN.
-- [ ] **Task 12 — M3 client card** `in_progress` (code+tests+build done, tsc in flight — exact resume checklist in §6b). Plan lines 2457-2599.
+- [x] **Task 12 — M3 client card** — DONE 2026-09-10, commit `a23ca4d`: tsc clean, suite 82/82 (11 files) on RUN, bundle 43.11 kB (banner + purity gate). Plan lines 2457-2599.
 - [ ] **Task 13 — M3 wiring + GUI verification** (plan 2599-2615): extend `cordis.patch.yml`, tsdown build of the client bundle, then GUI verification needs a RUNNING web harness — do NOT boot long-lived servers from the session; hand to the user (checkpoint).
 - [ ] **Task 14 — acceptance walkthrough + docs** (plan 2615-2634): walk the 9 acceptance criteria (spec §12) with evidence; write user docs (README-style usage: install via patch, config file reference, command reference); check off plan checkboxes only for what actually passed; final report to the user with PASS/FAIL/SKIPPED labels.
 - [ ] **User checkpoints owed** (do not perform alone): plan 8.4 (boot session with the patch; confirm engine mounts, no load error), 10.2 (run `/compact-config show` + `/compact-config test` in a real session), Task 13 GUI card check. Surface these clearly in the final report.
