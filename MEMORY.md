@@ -29,7 +29,14 @@ durable, reusable lessons and cross-checkout facts.
   `scripts/link-node-modules.mjs` (`WANTED`) and `vitest.config.ts`
   (`WORKSPACE_PACKAGES`) — keep the lists equal.
 - `deepFreeze` comes from `@deepseek-ai/dsh-llm` in BOTH checkouts (verified;
-  older notes about util-values are stale).
+  older notes about util-values are stale). `deepEqualJson` does NOT: it lives in
+  `@deepseek-ai/dsh-settings` (RUN dsh-llm never re-exports it).
+- Base-facade gaps: the RUN checkout's `tsconfig.base.json` has NO bare key for
+  `@deepseek-ai/dsh-settings` / `@deepseek-ai/dsh-settings-file` (only
+  `.../types`). vitest.config.ts carries a checkout-relative `FALLBACK_SRC_DIRS`
+  map (bare + `/src/*` aliases, merged into the longest-first sort) — extend it
+  the same way if another package's bare key is missing, and keep
+  WANTED/WORKSPACE_PACKAGES equal when adding packages.
 - `dsh-client-store` and `dsh-client-ui-renderer` exist only on the fork
   (verified 2026-09-10); the link script treats them as optional.
 
@@ -59,6 +66,16 @@ durable, reusable lessons and cross-checkout facts.
   the summary **without** a pointer (spec §6.5 = warn and continue).
 - Archive git-exclude assertion must use `/^\.dsh\/handoffs\/$/m` (the exclude
   file is newline-terminated).
+- Settings-bridge tests: ALWAYS wait for the boot-normalized file shape
+  (`models: []` present) before editing the config file in a test — the boot
+  adopt's normalized write can land AFTER a hasty `writeFileSync` and clobber it
+  (matchObject on the raw boot file passes too early). Adopt latency observed
+  ~200-300ms (150ms debounce + provider chain).
+- Schemastery defaults (vendor lib): object schemas default to `{}`, arrays to
+  `[]`, absent optional scalars are OMITTED from resolved values, unions of
+  string literals are required consts, numbers are strict (`typeof !== 'number'`
+  throws — no coercion), and host settings resolution runs WITHOUT autofix.
+  Consequence: the resolved handoff config omits `auto` until something writes it.
 
 ## 4. Config semantics decisions (RESOLVED — do not "fix" back)
 
@@ -82,3 +99,12 @@ durable, reusable lessons and cross-checkout facts.
   exception (Task 12).
 - Machine-local absolute paths belong in `cordis.patch.yml` / config files —
   never in plugin source code.
+- Client bundle delivery (M3): `ClientModuleRegistry` (packages/client/modules)
+  resolves each loader entry's package by NAME from the profile dir; out-of-tree
+  plugins need a junction in `$DSH_HOME/profiles/node_modules` (the healer keeps
+  foreign links). Missing `lib/client.js` at boot = MissingClientBundleError =
+  loud boot failure — build before booting with the patch entry.
+- The card's edit surface on RUN: `ctx.settingsScope.bind({namespace})` exposes
+  per-field path ops only (`set(field)`/`unset(field)`) — nested handoff
+  sections are written as whole-section objects (`set('trigger', {...})`); the
+  host `applyPathOp` accepts object values, and object layers merge recursively.
