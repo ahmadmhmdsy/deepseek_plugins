@@ -1,22 +1,45 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { standardDecoratorPlugin } from '../deepseek-harness/vitest.shared.ts'
+import ts from 'typescript'
 import { defineConfig } from 'vitest/config'
 
 const ROOT = dirname(fileURLToPath(import.meta.url))
-const FORK = resolve(ROOT, '..', 'deepseek-harness')
 
-// The fork's tsconfig.base.json is its documented resolution facade (header
-// comment there; plan §0.1): exact paths for every repo-local bare specifier,
-// no include (match-all). Its lib/ builds would create a second
-// module-singleton copy beside src, so — like the harness runtime (tsx over
-// the same paths) — vitest must resolve everything to fresh src.
-// vite-tsconfig-paths cannot do that here: it scopes a project's paths to
-// files inside the project directory (our workspace sits outside the fork),
-// and subpath imports then fell through to the junction exports under
-// node_modules and were externalized raw (SyntaxError on TS sources). These
-// explicit aliases carry the same mapping to every importer instead.
+// The target DSH checkout is chosen by scripts/link-node-modules.mjs (arg >
+// DSH_TARGET env > running-harness checkout > sibling dev fork) and recorded
+// in scripts/.dsh-target.txt. Reading that record here guarantees the vitest
+// alias facade and the runtime junctions point at the SAME tree.
+function resolveTarget(): string {
+  const record = resolve(ROOT, 'scripts', '.dsh-target.txt')
+  if (existsSync(record)) {
+    const recorded = readFileSync(record, 'utf8').trim()
+    if (recorded !== '' && existsSync(recorded)) return recorded
+  }
+  const candidates = [
+    process.env.DSH_TARGET,
+    'D:/deepseek_harness/deepseek-harness',
+    resolve(ROOT, '..', 'deepseek-harness'),
+  ].filter((p): p is string => typeof p === 'string' && p !== '')
+  const found = candidates.map(p => resolve(p)).find(p =>
+    existsSync(resolve(p, 'package.json'))
+    && existsSync(resolve(p, 'packages', 'compaction', 'compaction-basic', 'src', 'index.ts')))
+  if (found === undefined) throw new Error('no DSH checkout target recorded; run scripts/link-node-modules.mjs')
+  return found
+}
+const FORK = resolveTarget()
+
+// The target checkout's tsconfig.base.json is its documented resolution facade
+// (header comment there): exact paths for every repo-local bare specifier, no
+// include (match-all). Its lib/ builds would create a second module-singleton
+// copy beside src, so — like the harness runtime (tsx over the same paths) —
+// vitest must resolve everything to fresh src. vite-tsconfig-paths cannot do
+// that here: it scopes a project's paths to files inside the project directory
+// (our workspace sits outside the checkout), and subpath imports then fell
+// through to the junction exports under node_modules and were externalized
+// raw (SyntaxError on TS sources). These explicit aliases carry the same
+// mapping to every importer instead, generated from whichever checkout is the
+// current target.
 
 // The base file's only comments are whole-line // comments (no string value
 // spans lines), so stripping those lines yields valid JSON.
@@ -57,10 +80,44 @@ const keys = Object.keys(paths)
   .sort((a, b) => b.length - a.length)
 for (const k of keys) aliases.push({ find: k, replacement: resolve(FORK, paths[k][0]) })
 
+// Standard (stage-3) decorators appear in some target-checkout sources (the
+// dev fork's dsh-llm) and esbuild passes them through untransformed, which
+// crashes the module runner with a raw SyntaxError. This is the target
+// checkouts' own vitest.shared.ts standardDecoratorPlugin, inlined so the
+// config stays independent of any one checkout's tree (typescript resolves
+// through the workspace junction). On checkouts without decorators it is a
+// regex-guarded no-op.
+const decoratorSyntax = /^\s*@[A-Za-z_$][\w$]*/m
+function standardDecoratorPlugin() {
+  return {
+    name: 'dsh-standard-decorators',
+    enforce: 'pre' as const,
+    transform(code: string, id: string) {
+      const file = id.split('?', 1)[0]!
+      if (!/\.[cm]?tsx?$/.test(file) || !decoratorSyntax.test(code)) return
+      const result = ts.transpileModule(code, {
+        fileName: file,
+        compilerOptions: {
+          target: ts.ScriptTarget.ES2024,
+          module: ts.ModuleKind.ESNext,
+          jsx: file.endsWith('x') ? ts.JsxEmit.ReactJSX : undefined,
+          sourceMap: true,
+        },
+      })
+      return {
+        code: result.outputText
+          .replace(
+            /^(\s*)(__esDecorate\()/gmu,
+            '$1/* v8 ignore next -- compiler-synthetic decorator accessors have no source behavior */ $2',
+          )
+          .replace(/\n?\/\/# sourceMappingURL=.*$/u, '\n'),
+        map: result.sourceMapText,
+      }
+    },
+  }
+}
+
 export default defineConfig({
-  // dsh-llm/src (and other fork sources) use standard (stage-3) decorators
-  // that esbuild passes through untransformed; the fork's shared pre-plugin
-  // transpiles them before Vite's parser sees the source.
   plugins: [standardDecoratorPlugin()],
   resolve: { alias: aliases },
   test: {

@@ -2,7 +2,8 @@ import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createUserMessage, createMessage, createToolResultMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
+import * as dshLlm from '@deepseek-ai/dsh-llm'
+import { createUserMessage, createMessage, createToolResultMessage } from '@deepseek-ai/dsh-llm'
 import type { SummarizationInput } from '@deepseek-ai/dsh-compaction-basic/src/summarizer.ts'
 import {
   ensureGitExclude, nextArchiveName, renderConversation, renderPointerText, writeArchive,
@@ -16,8 +17,12 @@ function tempRoot(): string {
   return join(dir, 'handoffs')
 }
 
+// The call-id brand was renamed across DSH checkouts (public: CallId, dev
+// fork: ToolCallId); both brand a plain string at runtime.
+const callIdBrand = dshLlm as unknown as { CallId?: (id: string) => string; ToolCallId?: (id: string) => string }
+const brandCallId = callIdBrand.ToolCallId ?? callIdBrand.CallId
 function input(): SummarizationInput {
-  const callId = ToolCallId('call-1')
+  const callId = brandCallId!('call-1')
   return {
     system: 'You are a helpful assistant.',
     messages: [
