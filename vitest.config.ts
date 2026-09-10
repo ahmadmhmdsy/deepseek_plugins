@@ -54,7 +54,7 @@ const WORKSPACE_PACKAGES = [
   'cordis', 'cordis-plugin-include', 'cordis-plugin-loader', 'schemastery', 'cosmokit',
   'dsh-compaction', 'dsh-compaction-basic', 'dsh-compaction-tool-result-pruner',
   'dsh-llm', 'dsh-session', 'dsh-token-meter', 'dsh-agent', 'dsh-commands',
-  'dsh-settings', 'dsh-settings-file', 'dsh-client-ui-slots', 'dsh-client-ui-settings',
+  'dsh-settings', 'dsh-settings-file', 'dsh-client-runtime', 'dsh-client-ui-slots', 'dsh-client-ui-settings',
   'dsh-client-ui-settings-plugins', 'dsh-client-store', 'dsh-client-locale',
   'dsh-client-ui-renderer', 'dsh-workspace',
 ]
@@ -72,13 +72,33 @@ for (const name of WORKSPACE_PACKAGES) {
   aliases.push({ find: '@deepseek-ai/' + name + '/src/', replacement: srcDir + '/' })
 }
 
-// 2) Base facade keys, longest-first so a specific subpath key wins over its
-//    bare package prefix. Wildcard keys (dsh-client-*) are added when the M3
-//    client card needs them.
-const keys = Object.keys(paths)
-  .filter(k => !k.includes('*') && Array.isArray(paths[k]) && paths[k].length > 0)
-  .sort((a, b) => b.length - a.length)
-for (const k of keys) aliases.push({ find: k, replacement: resolve(FORK, paths[k][0]) })
+// 1b) Some base facades lack bare keys for a few packages (e.g. the RUN
+// checkout's paths carry only 'dsh-settings/types'), which would leave those
+// imports on their junction's lib build and violate the everything-to-src
+// rule. A checkout-relative fallback restores the bare + '/src/*' aliases;
+// the same layout exists on both checkouts.
+const FALLBACK_SRC_DIRS: Record<string, string> = {
+  'dsh-settings': 'packages/settings/settings/src',
+  'dsh-settings-file': 'packages/settings/settings-file/src',
+}
+const fallbackAliases: { find: string, replacement: string }[] = []
+for (const [name, rel] of Object.entries(FALLBACK_SRC_DIRS)) {
+  if (paths['@deepseek-ai/' + name]) continue
+  const dir = resolve(FORK, rel)
+  fallbackAliases.push({ find: '@deepseek-ai/' + name + '/src/', replacement: dir + '/' })
+  fallbackAliases.push({ find: '@deepseek-ai/' + name, replacement: dir })
+}
+
+// 2) Exact keys — base facade plus the fallback above — longest-first so a
+// specific subpath key wins over its bare package prefix (a bare alias also
+// prefix-matches subpaths, so ordering carries the precedence).
+const exactAliases = [
+  ...Object.keys(paths)
+    .filter(k => !k.includes('*') && Array.isArray(paths[k]) && paths[k].length > 0)
+    .map(k => ({ find: k, replacement: resolve(FORK, paths[k][0]!) })),
+  ...fallbackAliases,
+].sort((a, b) => b.find.length - a.find.length)
+aliases.push(...exactAliases)
 
 // Standard (stage-3) decorators appear in some target-checkout sources (the
 // dev fork's dsh-llm) and esbuild passes them through untransformed, which
