@@ -8,7 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./src/*": "./src/*",
-    "./client": "./lib/client.js"
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
   },
   "dsh": {
     "client": {
