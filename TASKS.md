@@ -28,14 +28,18 @@ User-gated tasks say so explicitly.
 
 ## Next (queued — approved plan Tasks 11-14)
 
-- **Task 13 — M3 wiring + GUI verification** `in_progress` (resume at the patch entry) — plan lines 2599-2615:
-  extend `cordis.patch.yml`, composition check, GUI check. GUI verification is
-  **user-gated** (needs a running web harness; do NOT boot one from a session).
-  NEW (HANDOFF §5.15): the card only ships if the package is resolvable by name
-  from the profile — needs a junction
-  `$DSH_HOME/profiles/node_modules/web-compact-config` → this workspace
-  (writes OUTSIDE the repo ⇒ **NEEDS_USER_DECISION**), and `lib/client.js`
-  must exist BEFORE the first patched boot (missing bundle = loud boot failure).
+- **Task 13 — M3 wiring + GUI verification** `in_progress` — plan lines 2599-2615:
+  - [x] Patch entry in `cordis.patch.yml`; composition check PASS (exit 0 on RUN;
+        compaction-basic disabled; compaction-handoff / compact-config-command /
+        web-compact-config rows all present) — commit `811579e`
+  - [x] Delivery junction created (user-approved):
+        `C:\Users\Ahmad Mahmoud\.dsh\profiles\node_modules\web-compact-config` →
+        this workspace package; `require.resolve('web-compact-config/package.json')`
+        from the profile dir resolves and `lib/client.js` is reachable (manifest gained
+        the required `./package.json` export — `48ed9eb`)
+  - [ ] GUI check (plan 13.2) — **user-gated**: user boots the RUN checkout with the
+        patch and verifies card visible / save→file / external edit→card / invalid
+        blocks inline; awaiting the user's report. The same boot covers plan 8.4.
 - **Task 14 — acceptance walkthrough + docs** `pending` — plan lines 2615-2634:
   walk the 9 acceptance criteria (spec §12) with evidence; write README
   (install via patch, config file reference, command reference); typecheck the

@@ -49,6 +49,10 @@ durable, reusable lessons and cross-checkout facts.
   -c tsdown.config.ts` (tsdown 0.22.2, `deps.neverBundle/alwaysBundle`); the junction farm
   exposes `tsdown` so the config's own import resolves. `lib/client.js` is gitignored —
   rebuild after checkout, and it must EXIST before the first patched boot. (2026-09-10)
+- Out-of-tree CLIENT packages must export `./package.json`: the client module registry resolves
+  `name + '/package.json'` anchored at the profile dir — without that export the boot scan fails
+  (no boot row, card never loads) even when the junction is in place. Verify a delivery junction
+  with `require.resolve('<name>/package.json', { paths: ['<profile dir>'] })`. (2026-09-10)
 
 ## 2. Cross-checkout API drift (verified by hash + diff, 2026-09-10)
 

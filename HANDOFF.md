@@ -223,11 +223,27 @@ to confirm nothing moved, then continue at Step 12-T1 below.
 - **User checkpoints owed** (never perform alone): plan 8.4 (patch boot mounts),
   10.2 (`/compact-config show` + `test` live), Task 13 GUI card check.
 
+### Task 13 progress (2026-09-10)
+- Patch entry + composition check PASS (commit `811579e`): exit 0 on the RUN checkout;
+  compaction-basic disabled; compaction-handoff / compact-config-command / web-compact-config
+  rows all present with correct name/config.
+- Delivery junction created (user-approved): `C:\Users\Ahmad Mahmoud\.dsh\profiles\node_modules\web-compact-config`
+  → the workspace package. Resolve check: `require.resolve('web-compact-config/package.json', { paths: [<profile dir>] })`
+  returns the workspace path; `lib/client.js` reachable through the junction.
+- Delivery gotcha found and fixed: the registry resolves `name + '/package.json'`, so the package
+  MUST export `./package.json` (fixed `48ed9eb`; mirrors in-tree client manifests). Without it the
+  boot scan fails even with the junction in place — this is the §5.15 failure mode in a new disguise.
+- GUI check (plan 13.2) handed to the user: boot the RUN checkout with
+  `node --import tsx/esm apps/cli/src/bin.ts --profile web --patch 'D:/my_deepseek_harness/deepseek_plugins/cordis.patch.yml'`
+  and verify (a) the Plugin configuration tab shows the compact-handoff card; (b) edit → Save →
+  `handoff-config.json` changes on disk; (c) an external file edit is reflected on the next
+  snapshot refresh; (d) invalid input blocks the save inline. The same boot is plan 8.4 evidence.
+
 ## 7. Remaining TODO (Tasks 11-14)
 
 - [x] **Task 11 — M3 host bridge** — DONE 2026-09-10, commit `c299596`. Settings seam verified on RUN first (register options `{base, applies, validate}`, scope `get/watch/update/replace`; agent-presets is the in-tree precedent). Bridge: no `base` layer (deviation §5.10), echo-guarded commit watcher, debounced dir re-adopt with refusal warnings. Tests: 12 (schema defaults/refusals, echo-guard, 6 service-level integration tests over the real FileSettingsProvider). Suite 71/71 (10 files) on RUN.
 - [x] **Task 12 — M3 client card** — DONE 2026-09-10, commit `a23ca4d`: tsc clean, suite 82/82 (11 files) on RUN, bundle 43.11 kB (banner + purity gate). Plan lines 2457-2599.
-- [ ] **Task 13 — M3 wiring + GUI verification** (plan 2599-2615): extend `cordis.patch.yml`, tsdown build of the client bundle, then GUI verification needs a RUNNING web harness — do NOT boot long-lived servers from the session; hand to the user (checkpoint).
+- [ ] **Task 13 — M3 wiring + GUI verification** (plan 2599-2615) `in_progress`: patch entry + composition check PASS (`811579e`); delivery junction created (user-approved); `./package.json` export fixed (`48ed9eb`); GUI check (plan 13.2) handed to the user — awaiting report.
 - [ ] **Task 14 — acceptance walkthrough + docs** (plan 2615-2634): walk the 9 acceptance criteria (spec §12) with evidence; write user docs (README-style usage: install via patch, config file reference, command reference); check off plan checkboxes only for what actually passed; final report to the user with PASS/FAIL/SKIPPED labels.
 - [ ] **User checkpoints owed** (do not perform alone): plan 8.4 (boot session with the patch; confirm engine mounts, no load error), 10.2 (run `/compact-config show` + `/compact-config test` in a real session), Task 13 GUI card check. Surface these clearly in the final report.
 
