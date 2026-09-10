@@ -2,6 +2,7 @@
 
 **Workspace:** `D:\my_deepseek_harness\deepseek_plugins` (git repo, branch master)
 **Written:** 2026-09-10 · **By:** the implementing agent session (DSH session-4755563c)
+**Revised:** 2026-09-10 — M2 committed (`5bbbd82`), TODO-0 closed with dual-checkout evidence, CLAUDE/AGENTS re-tuned, TASKS/MEMORY/ENVIRONMENT created (live status: [TASKS.md](./TASKS.md))
 **Purpose:** everything a fresh-context agent needs to resume Tasks 11-14 of the
 approved implementation plan without re-deriving anything.
 
@@ -12,7 +13,7 @@ approved implementation plan without re-deriving anything.
 1. This file (state + tasks).
 2. `docs/superpowers/specs/2026-09-10-auto-compact-handoff-design.md` — approved design (what to build).
 3. `docs/superpowers/plans/2026-09-10-auto-compact-handoff.md` — the implementation plan, Tasks 1-14 with exact code (2642 lines; Task sections start at lines 97/309/740/920/1122/1421/1599/1973/2023/2320/2334/2457/2599/2615).
-4. `AGENTS.md` + `CLAUDE.md` in this workspace are **stale copies from the unrelated nano_SLMs project** (GPU/Python training rules). Their generic engineering rules still apply; their repo map, venv commands, and nano_SLMs constraints DO NOT apply here. Report, don't follow.
+4. `CLAUDE.md` (operating rules) + `AGENTS.md` (repo map) were **re-tuned to this project on 2026-09-10** (they had arrived as stale copies from the unrelated nano_SLMs project). `TASKS.md` (live status), `MEMORY.md` (durable lessons), and `ENVIRONMENT.md` (machine facts) now exist and are the authoritative homes for their concerns (map: AGENTS.md §1).
 
 ## 1. Mission
 
@@ -57,7 +58,7 @@ Checkout API drift that matters (verified by hash + diff, 2026-09-10):
 
 ## 3. Environment facts + copy-paste commands
 
-- node v24.11.1, pnpm 11.7.0, Windows. All Python/venv talk in workspace AGENTS.md is irrelevant here.
+- node v24.11.1, pnpm 11.7.0, Windows. Machine facts live in ENVIRONMENT.md (the tuned AGENTS.md contains no Python/venv talk anymore).
 - **Never** bare-kill processes; the running harness (web profile) is this very session's host.
 
 ```powershell
@@ -73,8 +74,8 @@ node scripts/link-node-modules.mjs --target 'D:\my_deepseek_harness\deepseek-har
 node --import tsx/esm apps/cli/src/bin.ts --profile web --patch 'D:/my_deepseek_harness/deepseek_plugins/cordis.patch.yml' --dump-config
 ```
 
-Expected suite today: **7 spec files / 47 tests** on the pre-M2 tree; M2 adds
-`compact-config-command/tests/{parse,command}.spec.ts` (12 tests) → 59 total.
+Expected suite (post-M2, verified 2026-09-10 on BOTH checkouts): **9 spec files / 59 tests**
+(pre-M2 was 47; M2 adds 12 via `compact-config-command/tests/{parse,command}.spec.ts`).
 
 ## 4. Completed work (commits, oldest first)
 
@@ -102,18 +103,16 @@ Expected suite today: **7 spec files / 47 tests** on the pre-M2 tree; M2 adds
 7. **Task 9 command**: top-level trigger shorthand — `set tokens|ratio|mode <v>` maps into `trigger.*` (USAGE grammar promised it; plan's `applySet` wrote a top-level key the shared validator rejects).
 8. All plan `E:/js_projects/...` paths map to `D:/my_deepseek_harness/...` here; the patch file uses this workspace's absolute paths.
 
-## 6. In-flight / interrupted (resume point)
+## 6. In-flight state — CLOSED (was the resume point)
 
-The last action before this handoff aborted mid-call. TRUE state:
-- M2 (Task 9 parser/plugin/tests + Task 10 wiring) is **written and green** (12/12 on RUN; parse 8 + command 4) but **UNCOMMITTED** (`?? compact-config-command/`, `M cordis.patch.yml`).
-- `cordis.patch.yml` already contains the M2 entry; `--dump-config` (web profile) verified all three entries present, exit 0.
+- [x] M2 committed → `5bbbd82` (includes the trigger-shorthand deviation §5.7).
+- [x] Full suite re-verified post-M2: **59/59 (9 files) on RUN and on DEV**
+      (2026-09-10; target flipped to DEV, run, restored to RUN; evidence in TASKS.md).
+- [x] Composition check re-run on RUN checkout: exit 0, all three entries present.
+- [x] HANDOFF committed → `dc49f80`.
 - Target record = RUN checkout (`scripts/.dsh-target.txt`).
-- **NOT yet re-verified:** full-suite (59 tests) on RUN and on DEV after the M2 additions.
 
-**TODO 0 (do first):**
-- [ ] Run full suite on RUN checkout → expect 59 pass. Then flip target to dev, run again, flip back to RUN.
-- [ ] Commit M2: `feat(compact-config): /compact-config command with shared-validator mutations + M2 wiring` (include the trigger-shorthand deviation note from §5.7).
-- [ ] Commit this HANDOFF.md (separate `docs:` commit).
+**Resume point: Task 11** (M3 host bridge — see §7 and [TASKS.md](./TASKS.md)).
 
 ## 7. Remaining TODO (Tasks 11-14)
 
@@ -130,14 +129,14 @@ The last action before this handoff aborted mid-call. TRUE state:
 - Watch tests depend on fs.watch + 150ms debounce; `vi.waitFor` defaults suffice on this machine (verified repeatedly).
 - `--profile tui` does not exist on this machine; use `web` or `headless`.
 - The archive pointer path is workspace-relative only when the archive sits under cwd (`pointerPath` in summarize.ts) — tests cover both branches.
-- `deepFreeze` comes from `@deepseek-ai/dsh-llm` in BOTH checkouts (verified; the workspace AGENTS.md note about util-values is stale).
+- `deepFreeze` comes from `@deepseek-ai/dsh-llm` in BOTH checkouts (verified 2026-09-10; recorded in MEMORY.md §1).
 - git: this workspace is its own repo (remote ahmadmhmdsy/*). `node_modules/` is gitignored; junctions live there. Commit after every green task (house pattern).
 
 ## 9. File inventory (workspace)
 
 ```
 scripts/link-node-modules.mjs        junction builder (target-aware, name-scan)
-scripts/.dsh-target.txt              recorded target (gitignored? — currently tracked; decide in Task 14 docs: it is machine-local → add to .gitignore)
+scripts/.dsh-target.txt              recorded target (gitignored — machine-local)
 tsconfig.json                        editor/typecheck facade (paths → dev fork; types-only, not used by vitest)
 vitest.config.ts                     target-driven aliases + inlined decorator plugin
 cordis.patch.yml                     M1+M2 wiring overlay (--patch)
@@ -146,5 +145,6 @@ compaction-handoff/                  M1: src/{index,config,store,trigger,archive
 compact-config-command/              M2: src/{index,parse}.ts + tests/{parse,command}.spec
 probe-dsh-resolution/                keep — resolution regression probe
 docs/superpowers/{specs,plans}/      the two source documents
-HANDOFF.md                           this file
+HANDOFF.md                           this file (narrative + deviations ledger)
+TASKS.md · MEMORY.md · ENVIRONMENT.md  live status · durable lessons · machine facts
 ```
