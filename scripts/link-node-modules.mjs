@@ -71,6 +71,7 @@ const WANTED = [
   ['dsh-llm', true], ['dsh-session', true], ['dsh-token-meter', true], ['dsh-agent', true],
   ['dsh-commands', true], ['dsh-settings', true], ['dsh-settings-file', true],
   ['dsh-client-ui-slots', true], ['dsh-client-ui-settings', true], ['dsh-client-ui-settings-plugins', true],
+  ['dsh-client-runtime', true],
   ['dsh-client-store', false], ['dsh-client-locale', true], ['dsh-client-ui-renderer', false],
   ['dsh-workspace', true],
 ]
@@ -79,6 +80,7 @@ const WANTED = [
 const NPM_DEPS = [
   { name: 'react', from: 'packages/client/ui-settings-plugins' },
   { name: '@types/react', from: 'packages/client/ui-settings-plugins' },
+  { name: '@types/node', from: '' },
 ]
 
 /** Root dev tools used directly from this workspace. */
