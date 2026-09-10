@@ -11,3 +11,5 @@
       name: 'D:/my_deepseek_harness/deepseek_plugins/compaction-handoff/src/index.ts'
       config:
         configFile: 'D:/my_deepseek_harness/deepseek_plugins/handoff-config.json'
+    - id: compact-config-command
+      name: 'D:/my_deepseek_harness/deepseek_plugins/compact-config-command/src/index.ts'
