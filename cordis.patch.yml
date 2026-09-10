@@ -1,0 +1,13 @@
+# cordis.patch.yml — loaded with: dsh --profile <profile> --patch <this file>
+# Disable the base ratio-only engine and mount the handoff engine instead.
+# Paths are machine-local (this workspace); universal across both DSH
+# checkouts — the plugin's imports resolve through deepseek_plugins/node_modules
+# junctions, which scripts/link-node-modules.mjs re-points at whichever
+# checkout boots the harness.
+- id: compaction-basic
+  disabled: true
+- insert:
+    - id: compaction-handoff
+      name: 'D:/my_deepseek_harness/deepseek_plugins/compaction-handoff/src/index.ts'
+      config:
+        configFile: 'D:/my_deepseek_harness/deepseek_plugins/handoff-config.json'
