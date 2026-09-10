@@ -121,10 +121,95 @@ Expected suite (post-M2, verified 2026-09-10 on BOTH checkouts): **9 spec files 
 
 **Resume point: Task 12** (M3 client card — see §7 and [TASKS.md](./TASKS.md)). Task 11 is done (commit c299596, 71/71 on RUN).
 
+## 6b. In-flight state — OPEN (resume here: Task 12, client card)
+
+**Written:** 2026-09-10, mid-Task-12, by the M3 session (goal: M3 web settings
+card). This is the exact pause point; a fresh agent should `git log --oneline -4`
+to confirm nothing moved, then continue at Step 12-T1 below.
+
+### Already committed
+- Task 11 (host bridge): code `c299596`, docs `89291e7`. Suite was 71/71 (10 files) on RUN at that point.
+- Deviations ledger current through §5.15. Target record = RUN (`scripts/.dsh-target.txt`).
+
+### Task 12 — written and verified so far (UNCOMMITTED)
+- Code: `web-compact-config/src/client/store.ts` (local SnapshotStore-like),
+  `src/client/controller.ts` (staged section form; save = section-level
+  `scope.set/unset` — see §5.17), `src/client/Card.tsx` (inline-styled `<li>`
+  card, plain English), `src/client/index.ts` (keyed `settings.plugin.item`
+  registration, inject `['slots','connection','remote','settingsScope']`),
+  `tsdown.config.ts` (PLATFORM_MODULES externals + purity gate + loader banner).
+- Tests: `tests/controller.spec.ts` — 11 tests, ALL GREEN (fake scope; staging,
+  save patches, reset→unset, rows/carry-through, empty-row drop, failed-save
+  keeps drafts, discard, preview, unavailable namespace).
+- Bundle: BUILT + verified — `web-compact-config/lib/client.js` (42.95 kB),
+  first line = `window.__ModuleLoader__.load({`, `react/jsx-runtime` external via
+  require. Build cmd (cwd = workspace):
+  `& 'D:\deepseek_harness\deepseek-harness\node_modules\.bin\tsdown.CMD' --config web-compact-config/tsdown.config.ts`
+  (`lib/` is gitignored — rebuild after checkout).
+- Toolchain: link script WANTED + `['dsh-client-runtime', true]`, NPM_DEPS +
+  `{ name: '@types/node', from: '' }`; root `tsconfig.json`: +dsh-client-runtime
+  paths, `baseUrl` DROPPED (TS 6.0.3 deprecates it) with every paths value
+  prefixed `../deepseek-harness/`; junctions RELINKED (target still RUN).
+
+### Step-by-step resume checklist (Task 12 finish line)
+- [ ] **12-T1 — make tsc clean.** Run
+      `node 'D:\deepseek_harness\deepseek-harness\node_modules\typescript\bin\tsc' --noEmit -p web-compact-config/tsconfig.json`
+      (cwd = workspace). Known remaining errors, in two buckets:
+      1. MY files (small, exact fixes):
+         - `Card.tsx` Checkbox: unify `onEdit` on `(value: string) => void`
+           (it already emits 'true'/'false'); fix the 4 boolean-typed call
+           sites (archive.gitExclude, auto, row.disabled ×2).
+         - `Card.tsx` (~line 350): `onClick={sectionReset('auto')()}` →
+           `onClick={sectionReset('auto')}` (inline call returns void).
+         - `controller.ts` save(): `!this.dirty` — no such member; add a
+           private `isDirty` getter (same flags the projection uses:
+           pendingClear/autoPendingClear/modelsPendingClear/staged.size/
+           autoStaged/modelsStaged) and use it in save() + projection().
+      2. VENDOR cordis src (TS7053/TS7023/...): `vendor/cordis/tsconfig.json`
+         compiles with RELAXED flags (`noImplicitAny/noImplicitThis: false`,
+         `strictFunctionTypes: false`, `noUncheckedIndexedAccess: false`,
+         `exactOptionalPropertyTypes: false`, `noImplicitOverride: false`,
+         `noUnused*: false`) — the workspace facade is stricter than the flags
+         cordis itself compiles under. RECOMMENDED (record as deviation §5.16):
+         copy those relaxations into the root tsconfig (they only REMOVE
+         errors; my sources were written under full strict and still compile),
+         then re-run tsc until only zero errors remain.
+- [ ] **12-T2 — full suite.** Expect **82/82 (11 files)**: 71 previous + 11
+      controller. If a bridge test flakes on timing, see MEMORY §3 (wait for the
+      boot-normalized shape before editing the config file).
+- [ ] **12-T3 — rebuild the bundle** (cmd above) and re-verify the banner +
+      `require("react/jsx-runtime")` line.
+- [ ] **12-T4 — commit code**:
+      `feat(web-compact-config): client card with staged form and loader artifact`
+      (files: web-compact-config/{package.json,tsconfig.json,tsdown.config.ts},
+      src/**, tests/controller.spec.ts, scripts/link-node-modules.mjs, tsconfig.json).
+- [ ] **12-T5 — extend the deviations ledger + TASKS + MEMORY** (commit docs):
+      §5.16 typecheck-flag relaxation; §5.17 card save protocol (client
+      `SettingsScope` has per-field path ops only → the card stages WHOLE
+      sections; plan's `scope.update(patch)` does not exist client-side);
+      §5.18 tsdown `deps.neverBundle/alwaysBundle` (modern API; the plan's
+      snippet already used it — `external/noExternal` warn as deprecated).
+
+### After Task 12 — remaining M3 steps
+- **Task 13**: add the patch entry (plan Step 13.1, workspace paths);
+  composition check (`node --import tsx/esm apps/cli/src/bin.ts --profile web
+  --patch 'D:/my_deepseek_harness/deepseek_plugins/cordis.patch.yml'
+  --dump-config`, cwd = RUN checkout; expect web-compact-config row); then the
+  **NEEDS_USER_DECISION** delivery step (§5.15): junction
+  `$DSH_HOME/profiles/node_modules/web-compact-config` → this workspace package
+  (writes OUTSIDE the repo — ask the user first), and the user-gated GUI
+  checkpoint (boot with the patch; card visible; edit→file changes; external
+  edit→card reflects; invalid input blocks inline).
+- **Task 14**: acceptance walkthrough (spec §12), typecheck the other two
+  packages (same facade now), oxlint if it cooperates, README/docs
+  (docs/compaction-handoff.md per plan 14.3), final PASS/FAIL/SKIPPED report.
+- **User checkpoints owed** (never perform alone): plan 8.4 (patch boot mounts),
+  10.2 (`/compact-config show` + `test` live), Task 13 GUI card check.
+
 ## 7. Remaining TODO (Tasks 11-14)
 
 - [x] **Task 11 — M3 host bridge** — DONE 2026-09-10, commit `c299596`. Settings seam verified on RUN first (register options `{base, applies, validate}`, scope `get/watch/update/replace`; agent-presets is the in-tree precedent). Bridge: no `base` layer (deviation §5.10), echo-guarded commit watcher, debounced dir re-adopt with refusal warnings. Tests: 12 (schema defaults/refusals, echo-guard, 6 service-level integration tests over the real FileSettingsProvider). Suite 71/71 (10 files) on RUN.
-- [ ] **Task 12 — M3 client card** (plan 2457-2599): `src/client/{index,controller}.tsx-ish,Card.tsx,store.ts`, tsdown CJS client bundle (`window.__ModuleLoader__` banner contract, entry lib/client.js). Universal-target caveat: `dsh-client-store`/`dsh-client-ui-renderer` packages don't exist in RUN sources; check what the RUN checkout's `packages/client/ui-settings-plugins/src/client` actually exports and follow the RUN tree for the card (the card ships to the RUNNING harness). React 18 JSX; card types from `@deepseek-ai/dsh-client-ui-slots` (type-only). If a needed client package is missing on RUN, stop and report — M3 client may be fork-only by user decision (ASK; do not assume).
+- [ ] **Task 12 — M3 client card** `in_progress` (code+tests+build done, tsc in flight — exact resume checklist in §6b). Plan lines 2457-2599.
 - [ ] **Task 13 — M3 wiring + GUI verification** (plan 2599-2615): extend `cordis.patch.yml`, tsdown build of the client bundle, then GUI verification needs a RUNNING web harness — do NOT boot long-lived servers from the session; hand to the user (checkpoint).
 - [ ] **Task 14 — acceptance walkthrough + docs** (plan 2615-2634): walk the 9 acceptance criteria (spec §12) with evidence; write user docs (README-style usage: install via patch, config file reference, command reference); check off plan checkboxes only for what actually passed; final report to the user with PASS/FAIL/SKIPPED labels.
 - [ ] **User checkpoints owed** (do not perform alone): plan 8.4 (boot session with the patch; confirm engine mounts, no load error), 10.2 (run `/compact-config show` + `/compact-config test` in a real session), Task 13 GUI card check. Surface these clearly in the final report.

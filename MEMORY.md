@@ -99,6 +99,17 @@ durable, reusable lessons and cross-checkout facts.
   exception (Task 12).
 - Machine-local absolute paths belong in `cordis.patch.yml` / config files —
   never in plugin source code.
+- The checkouts' TypeScript is **6.0.3**; `baseUrl` is deprecated there — the
+  workspace root tsconfig now declares paths WITHOUT baseUrl (values resolve
+  relative to the declaring file, prefixed `../deepseek-harness/`).
+- The workspace typecheck facade must relax the flags vendor packages compile
+  under: `vendor/cordis/tsconfig.json` sets `noImplicitAny/noImplicitThis/
+  strictFunctionTypes/noUncheckedIndexedAccess/exactOptionalPropertyTypes/
+  noImplicitOverride/noUnusedLocals/noUnusedParameters` to false. A strict-only
+  facade drowns tsc in vendor errors (TS7053/TS7023 in cordis src).
+- `@types/node` is junctioned from the checkout ROOT (link script NPM_DEPS
+  `{ name: '@types/node', from: '' }`) — tsc's `types: ["node"]` needs it inside
+  the workspace node_modules.
 - Client bundle delivery (M3): `ClientModuleRegistry` (packages/client/modules)
   resolves each loader entry's package by NAME from the profile dir; out-of-tree
   plugins need a junction in `$DSH_HOME/profiles/node_modules` (the healer keeps
