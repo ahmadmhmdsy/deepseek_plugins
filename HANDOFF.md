@@ -343,6 +343,31 @@ enable/disable the plugin from the gui".
   Same-model summarization is unchanged (it was already the default: empty
   summarization.provider/model pair routes the summary through the conversation model).
 
+## 8d. Deep-dive hot-reload deferral (user report 2026-09-12 — CONCLUDED 2026-09-12, Phase A)
+
+- User live test on 3080 (profile patch active): hot reload works in the GUI;
+  changing the trigger while the agent is mid deep dive does not cause compaction
+  until the dive exits or is paused and re-entered — then the new value applies.
+- Confirmed working on 3080: plugin suite active via profile patch (composition
+  dump verified: `compaction-basic`/`command-compact` disabled, our three plugins
+  active), compactions firing and archiving under
+  `D:\deepseek_harness\deepseek-harness\.dsh\handoffs\` (user test session
+  `b39a1696` archived 2026-09-12 11:16:31).
+- CONCLUDED 2026-09-12 via the isolated 3082 discriminator run (.dsh-test/
+  cordis.patch.test.yml + .dsh-test/handoff-config-test.json): Phase A holds -
+  the engine compacted MID-TURN within ~0.9 s of a trigger edit (boundary compact
+  001 at 08:47:22.714Z -> edit applied 08:47:25.384Z -> mid-turn compact 002 at
+  08:47:26.248Z), and raising the trigger to 10000 stopped compaction entirely
+  (store mtime 08:48:33Z; no archive 003). No restart or turn boundary needed.
+  Honest caveat: compact 002 measured 1241 tokens (below both old and new trigger
+  values), so per-archive trigger-value causality is not demonstrable; the
+  hot-reload timing and direction (fires on lower trigger / silences on raise)
+  are demonstrated. The original 3080 report is explained by the pre-Decision-A
+  poison (§8b, since fixed) rather than a stale-config engine; unrouted sessions
+  return null by design (routedTarget). Evidence: archives session-b15e3962
+  (001, 002, index.md), config .dsh-test/handoff-config-test.json (final:
+  enabled:true, trigger tokens:10000, retain tokens:8000, auto:true).
+
 ## 9. File inventory (workspace)
 
 ```

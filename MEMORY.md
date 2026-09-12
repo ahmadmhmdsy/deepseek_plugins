@@ -116,6 +116,41 @@ durable, reusable lessons and cross-checkout facts.
   out-prices the framed checkpoint (~211 tokens); the upstream shrink guard
   rejects tiny spans (HANDOFF §5.6).
 
+## 4b. Deep-dive auto-compact timing (user live observation, 2026-09-12)
+
+- Confirmed live on 3080 with the profile patch: hot reload applies, archives
+  land (`D:\deepseek_harness\deepseek-harness\.dsh\handoffs\...`), including the
+  user's own test session `b39a1696` at 11:16:31.
+- User report: changing the trigger in the GUI **while an agent is in deep
+  dive** does not apply the change until the dive exits, or pause → re-enter;
+  then auto-compact fires with the new value.
+- Code facts established (RUN checkout 2026-09-12):
+  - Auto-compact pressure is evaluated at `agent/pre-step` per agent step
+    (`compaction-basic/src/index.ts:147`), via our `compactIfNeeded` override
+    which re-reads the hot config every call (`compaction-handoff/src/index.ts:120`).
+  - Scoped-event admission extends UP the scope chain: a root-level listener
+    DOES receive child subagent events (`core/scope/src/index.ts:35-37, 161-164`),
+    so listener placement is NOT the cause.
+  - If the routing header is missing (`routedTarget === undefined`), pressure
+    preview/compaction returns null — unrouted sessions never fire.
+- CONCLUDED 2026-09-12 (cheap discriminator run on the isolated 3082 test
+  instance, config at .dsh-test/handoff-config-test.json, archives under
+  D:\deepseek_harness\deepseek-harness\.dsh\handoffs\session-b15e3962...):
+  Phase A - mid-turn hot reload CONFIRMED. Sequence: trigger tokens=800 ->
+  boundary compact 001 at 08:47:22.714Z (7906 tokens) -> trigger edit to 500
+  APPLIED at 08:47:25.384Z -> mid-turn compact 002 at 08:47:26.248Z, i.e. 0.86 s
+  after the edit, in the same turn (model minimax/MiniMax-M3). The
+  restart/turn-boundary requirement is DISPROVED. Trigger raised to 10000 (store
+  mtime 08:48:33Z) -> ZERO further compactions (no 003 archive): the hot-reloaded
+  value governs in both directions.
+  Honest caveat: archive 002 measured 1241 tokens, BELOW both the old (800) and
+  new (500) triggers, so per-archive trigger-value causality was not provable
+  (span measurement happens at evaluation); the hot-reload TIMING is what this
+  run proves. The original 3080 deep-dive report (deferral until pause/re-enter)
+  is consistent with the pre-Decision-A poisoned-config mechanism (HANDOFF §8b,
+  since fixed) and/or the unrouted-session null-guard, not with a stale-config
+  engine.
+
 ## 5. Runtime facts
 
 - `--profile tui` does not exist on this machine; use `web` or `headless`.
