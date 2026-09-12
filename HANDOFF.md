@@ -316,6 +316,33 @@ hot-reload it). Raw evidence in `.live-test/` (gitignored).
   Recommendation: A. User's original handoff-config.json restored verbatim after the
   tests (backup: .live-test/handoff-config.json).
 
+## 8c. Decision A implemented (user-approved 2026-09-12; commit 2764dc0)
+
+Approved in-session: "approve A option, but allow the user at any time if he want to
+enable/disable the plugin from the gui".
+
+- 19 (clamp): `resolveHandoffSpec` no longer throws on `retainTokens >= thresholdTokens`;
+  it clamps the keep-tail to `thresholdTokens - 1` and reports `retainClamped: true` on the
+  spec. The engine warns ONCE per `target@threshold:retain` signature
+  (`clampedRetainWarned`). Shrink-guard rejections of the resulting small span are
+  per-attempt (content-driven), never the config poison.
+- 20 (load-time absolute rejection): `parseHandoffConfig` rejects absolute
+  `retain.tokens >= trigger.tokens` globally and inside presets (decidable at load).
+  Mixed absolute-trigger/ratio-retain pairs stay loadable and clamp at resolve.
+- 21 (enabled master switch): new top-level `enabled` boolean (default true, hot-reloaded
+  like everything else). false = no pressure compaction AND no archive/pointer (summarize
+  passes through to the parent); `context-overflow` recovery still delegates to the parent
+  for session safety. The card gained a "plugin enabled" checkbox; `/compact-config set
+  enabled true|false` and `/compact-config test` now show `plugin enabled`/`retain clamped`.
+- toBasicConfig guard: the parent's ratio invariant is protected — `retainRatio` is only
+  forwarded when strictly below the trigger ratio it pairs with; otherwise omitted (the
+  subclass owns pressure; the parent keeps only overflow recovery where retain is 0).
+- Evidence: suite 95/95 (11 files) on RUN and on DEV (flipped and restored); composition
+  --dump-config exit 0; client bundle rebuilt (45.27 kB). Facade tsc: 16 pre-existing
+  fork-target drift errors at HEAD — verified unchanged by scoped stash (out of scope).
+  Same-model summarization is unchanged (it was already the default: empty
+  summarization.provider/model pair routes the summary through the conversation model).
+
 ## 9. File inventory (workspace)
 
 ```
