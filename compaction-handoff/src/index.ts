@@ -66,6 +66,8 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
   readonly store: HandoffConfigStore
   private readonly defaultCwd: string
   private readonly spanTokensByAgent = new WeakMap<Agent, number>()
+  /** Warn-once keys for retain clamps: target@threshold:retain. */
+  private readonly clampedRetainWarned = new Set<string>()
 
   constructor(ctx: Context, config: HandoffPluginConfig = {}) {
     const filePath = resolveConfigFilePath(config)
@@ -89,6 +91,8 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
     disabled: boolean
     presetMatched: boolean
     wouldFire: boolean
+    retainClamped: boolean
+    pluginEnabled: boolean
   } {
     const target = routedTarget(agent.session)
     const measured = (this.ctx.tokenMeter.measure(agent.session) as MeterMeasurement).totalTokens
@@ -96,6 +100,7 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
       return {
         measuredTokens: measured, thresholdTokens: Number.POSITIVE_INFINITY,
         thresholdSource: 'unrouted', disabled: false, presetMatched: false, wouldFire: false,
+        retainClamped: false, pluginEnabled: this.handoffConfig.enabled,
       }
     }
     const preset = resolvePreset(this.handoffConfig, target)
@@ -107,6 +112,8 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
       disabled: spec.disabled,
       presetMatched: preset !== undefined,
       wouldFire: wouldFire(spec, measured),
+      retainClamped: spec.retainClamped,
+      pluginEnabled: this.handoffConfig.enabled,
     }
   }
 
@@ -116,6 +123,9 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
     signal: AbortSignal,
   ): Promise<CompactionResult | null> {
     if (trigger === 'context-overflow') return super.compactIfNeeded(agent, trigger, signal)
+    // Master switch (hot-reloaded): disabled means no pressure compaction and no
+    // archive/pointer; overflow recovery keeps the parent path for session safety.
+    if (!this.handoffConfig.enabled) return null
     const target = routedTarget(agent.session)
     if (target === undefined) return null
     const config = this.handoffConfig
@@ -144,6 +154,17 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
       assertNoActiveCompaction(agent.session, 'automatic pressure compaction')
     }
     const spec = resolveHandoffSpec(config, preset, contextWindow)
+    if (spec.retainClamped) {
+      const key = target.provider + '/' + target.model + '@' + spec.thresholdTokens + ':' + spec.retainTokens
+      if (!this.clampedRetainWarned.has(key)) {
+        this.clampedRetainWarned.add(key)
+        this.ctx.logger.warn(
+          'compaction-handoff: retain exceeds the trigger for ' + target.provider + '/' + target.model
+          + '; clamped the kept tail to ' + spec.retainTokens + ' of ' + spec.thresholdTokens + ' trigger tokens'
+          + ' (lower retain.ratio/tokens for the full budget)',
+        )
+      }
+    }
     if (measurement.totalTokens < spec.thresholdTokens) return null
 
     // Once pressure qualifies, land the model-free pass before choosing a
@@ -193,6 +214,7 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
     agent: Agent,
     signal?: AbortSignal,
   ): Promise<SummaryResult> {
+    if (!this.handoffConfig.enabled) return super.summarize(input, agent, signal)
     const routed = routedTarget(agent.session)
     const target = routed
       ?? (agent.options.provider !== undefined && agent.options.provider.length > 0

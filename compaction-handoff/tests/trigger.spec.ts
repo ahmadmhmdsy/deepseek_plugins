@@ -48,10 +48,24 @@ describe('resolveHandoffSpec', () => {
     const c2 = parseHandoffConfig({ trigger: { ratio: 0.8 } })
     expect(() => resolveHandoffSpec(c2, undefined, undefined)).toThrow(TargetPressureConfigError)
   })
-  it('retain at or above the effective threshold throws TargetPressureConfigError', () => {
-    const c = parseHandoffConfig({ trigger: { tokens: 100 }, retain: { tokens: 100 } })
-    expect(() => resolveHandoffSpec(c, undefined, undefined))
-      .toThrow(/retainTokens \(100\) must be less than threshold tokens 100/)
+  it('an absolute retain at or above the absolute trigger is rejected at load', () => {
+    expect(() => parseHandoffConfig({ trigger: { tokens: 100 }, retain: { tokens: 100 } }))
+      .toThrow(/retain\.tokens \(100\) must be less than trigger\.tokens \(100\)/)
+  })
+  it('a window-relative retain exceeding the resolved threshold is clamped to threshold-1 (Decision A)', () => {
+    // ratio-retain is window-relative, so load-time cannot reject; resolve clamps.
+    const c = parseHandoffConfig({ trigger: { tokens: 100 }, retain: { ratio: 0.9 } })
+    const spec = resolveHandoffSpec(c, undefined, 1000)
+    expect(spec.thresholdTokens).toBe(100)
+    expect(spec.retainClamped).toBe(true)
+    expect(spec.retainTokens).toBe(99) // Math.max(threshold - 1, 0)
+    expect(wouldFire(spec, 150)).toBe(true)
+  })
+  it('an in-bound retain is reported unclamped', () => {
+    const c = parseHandoffConfig({ trigger: { tokens: 100 }, retain: { tokens: 10 } })
+    const spec = resolveHandoffSpec(c, undefined, undefined)
+    expect(spec.retainClamped).toBe(false)
+    expect(spec.retainTokens).toBe(10)
   })
 })
 

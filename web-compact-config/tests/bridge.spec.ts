@@ -63,6 +63,7 @@ describe('HandoffSettingsSchema', () => {
       archive: { root: '.dsh/handoffs', gitExclude: true, onFailure: 'block' },
       summarization: { provider: 'deepseek', model: 'deepseek-chat', maxTokens: 8192 },
       retries: { compactionRetries: 1, maxOverflowRetries: 1 },
+      enabled: false,
       auto: true,
       models: [
         {
@@ -71,6 +72,7 @@ describe('HandoffSettingsSchema', () => {
         },
       ],
     }) as Record<string, unknown>
+    expect(resolved.enabled).toBe(false)
     expect(resolved.auto).toBe(true)
     expect(resolved.trigger).toEqual({ mode: 'tokens', tokens: 200000 })
     expect(resolved.models).toHaveLength(1)

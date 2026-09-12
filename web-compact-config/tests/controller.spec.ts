@@ -43,6 +43,13 @@ function fakeScope(options: FakeOptions = {}): {
   const sets: Array<[string, unknown]> = []
   const unsets: string[] = []
   let rejecting = false
+  const setField = (field: string, value: unknown, present: boolean): void => {
+    const prev = (snapshot.value ?? {}) as Record<string, unknown>
+    const next = { ...prev }
+    if (present) next[field] = value
+    else delete next[field]
+    ;(snapshot as { value: HandoffSettings }).value = next as HandoffSettings
+  }
   const scope = {
     getSnapshot: () => snapshot,
     subscribe: (listener: () => void) => {
@@ -54,6 +61,10 @@ function fakeScope(options: FakeOptions = {}): {
       if (!rejecting) {
         ;(snapshot as { user: Record<string, unknown> | undefined }).user = { ...(snapshot.user ?? {}), [field]: value }
         snapshot.revision += 1
+        // A landed user-layer write re-resolves the value (user wins per field),
+        // like the real client scope — scalars such as 'auto'/'enabled' are read
+        // back through snapshot.value after save() clears their drafts.
+        setField(field, value, true)
       }
       for (const listener of [...listeners]) listener()
       return Promise.resolve()
@@ -65,6 +76,7 @@ function fakeScope(options: FakeOptions = {}): {
         delete kept[field]
         ;(snapshot as { user: Record<string, unknown> | undefined }).user = Object.keys(kept).length === 0 ? undefined : kept
         snapshot.revision += 1
+        setField(field, undefined, false)
       }
       for (const listener of [...listeners]) listener()
       return Promise.resolve()
@@ -117,6 +129,59 @@ describe('CompactConfigCardController', () => {
     await flush()
     expect(unsets).toEqual(['trigger'])
     expect(sets).toEqual([])
+  })
+
+  it('the plugin master switch stages, renders, and saves', async () => {
+    const { scope, sets } = fakeScope({ value: RESOLVED, user: {} })
+    const controller = new CompactConfigCardController(scope)
+    const face = controller.inject()
+    expect(face.hooks.card.getSnapshot().enabled).toEqual({ value: true, overridden: false })
+    face.edit('enabled', 'false')
+    let state = face.hooks.card.getSnapshot()
+    expect(state.enabled).toEqual({ value: false, overridden: true })
+    expect(state.dirty).toBe(true)
+    face.save()
+    await flush()
+    expect(sets).toEqual([['enabled', false]])
+    state = face.hooks.card.getSnapshot()
+    expect(state.enabled).toEqual({ value: false, overridden: true })
+    expect(state.dirty).toBe(false)
+  })
+
+  it('staging the master switch at its effective value writes nothing', async () => {
+    const { scope, sets } = fakeScope({ value: RESOLVED, user: { enabled: true } })
+    const controller = new CompactConfigCardController(scope)
+    const face = controller.inject()
+    face.edit('enabled', 'true')
+    face.save()
+    await flush()
+    expect(sets).toEqual([])
+    expect(face.hooks.card.getSnapshot().dirty).toBe(false)
+  })
+
+  it('resetField stages a master-switch clear that saves as unset', async () => {
+    const { scope, sets, unsets } = fakeScope({ value: RESOLVED, user: { enabled: false } })
+    const controller = new CompactConfigCardController(scope)
+    const face = controller.inject()
+    face.resetField('enabled')
+    const state = face.hooks.card.getSnapshot()
+    expect(state.enabled).toEqual({ value: true, overridden: false })
+    expect(state.dirty).toBe(true)
+    face.save()
+    await flush()
+    expect(unsets).toEqual(['enabled'])
+    expect(sets).toEqual([])
+  })
+
+  it('discard drops master-switch drafts and restores the effective value', async () => {
+    const { scope } = fakeScope({ value: { ...RESOLVED, enabled: false }, user: { enabled: false } })
+    const controller = new CompactConfigCardController(scope)
+    const face = controller.inject()
+    face.edit('enabled', 'true')
+    face.discard()
+    const state = face.hooks.card.getSnapshot()
+    expect(state.dirty).toBe(false)
+    expect(state.enabled).toEqual({ value: false, overridden: true })
   })
 
   it('rows map to model presets and carry through untouched preset sections', async () => {

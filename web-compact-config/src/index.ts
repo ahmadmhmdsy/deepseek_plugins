@@ -42,6 +42,7 @@ export const Config: z<BridgeConfig> = z.object({
  * validator in the `validate` registration option, which refuses the write.
  */
 export const HandoffSettingsSchema: z<Record<string, unknown>> = z.object({
+  enabled: z.boolean(),
   trigger: z.object({
     mode: z.union(['first', 'tokens']),
     ratio: z.number(),

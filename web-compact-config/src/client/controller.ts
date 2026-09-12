@@ -24,6 +24,7 @@ export interface HandoffSettings {
   archive?: Section
   summarization?: Section
   retries?: Section
+  enabled?: boolean
   auto?: boolean
   models?: Section[]
 }
@@ -66,6 +67,8 @@ export interface CompactConfigCardState {
   failed: boolean
   /** Section fields keyed by dotted path ('trigger.ratio', 'archive.root', ...). */
   fields: Record<string, FieldView>
+  /** Global plugin master switch (boolean control, not draft text). */
+  enabled: { value: boolean; overridden: boolean }
   /** Global auto toggle (boolean control, not draft text). */
   auto: { value: boolean; overridden: boolean }
   models: { rows: ModelRowView[]; overridden: boolean }
@@ -79,7 +82,7 @@ export interface CompactConfigCardFace {
     /** Card snapshot bound by the renderer as useCard. */
     card: SnapshotStore<CompactConfigCardState>
   }
-  /** Stage draft text for one field (or 'true'/'false' for 'auto'). */
+  /** Stage draft text for one field (or 'true'/'false' for the 'auto'/'enabled' toggles). */
   edit: (field: string, text: string) => void
   /** Stage a section clear, so saving lets it re-inherit the defaults. */
   resetField: (section: string) => void
@@ -186,6 +189,8 @@ export class CompactConfigCardController {
   private modelsStaged = false
   private autoStaged: boolean | undefined
   private autoPendingClear = false
+  private enabledStaged: boolean | undefined
+  private enabledPendingClear = false
   private modelsPendingClear = false
   private saving = false
   private failed = false
@@ -233,6 +238,13 @@ export class CompactConfigCardController {
     if (field === 'auto') {
       this.autoPendingClear = false
       this.autoStaged = text === 'true'
+      this.failed = false
+      this.publish()
+      return
+    }
+    if (field === 'enabled') {
+      this.enabledPendingClear = false
+      this.enabledStaged = text === 'true'
       this.failed = false
       this.publish()
       return
@@ -308,6 +320,9 @@ export class CompactConfigCardController {
     if (section === 'auto') {
       this.autoStaged = undefined
       this.autoPendingClear = true
+    } else if (section === 'enabled') {
+      this.enabledStaged = undefined
+      this.enabledPendingClear = true
     } else if (section === 'models') {
       this.modelsStaged = false
       this.modelsPendingClear = true
@@ -319,12 +334,14 @@ export class CompactConfigCardController {
   }
 
   private discard(): void {
-    const stagedEmpty = this.staged.size === 0 && this.autoStaged === undefined && !this.modelsStaged
-    if (stagedEmpty && this.pendingClear.size === 0 && !this.autoPendingClear && !this.modelsPendingClear && !this.failed) return
+    const stagedEmpty = this.staged.size === 0 && this.autoStaged === undefined && this.enabledStaged === undefined && !this.modelsStaged
+    if (stagedEmpty && this.pendingClear.size === 0 && !this.autoPendingClear && !this.enabledPendingClear && !this.modelsPendingClear && !this.failed) return
     this.staged.clear()
     this.pendingClear.clear()
     this.autoStaged = undefined
     this.autoPendingClear = false
+    this.enabledStaged = undefined
+    this.enabledPendingClear = false
     this.modelsStaged = false
     this.modelsPendingClear = false
     this.failed = false
@@ -340,6 +357,8 @@ export class CompactConfigCardController {
       || this.pendingClear.size > 0
       || this.autoStaged !== undefined
       || this.autoPendingClear
+      || this.enabledStaged !== undefined
+      || this.enabledPendingClear
       || this.modelsStaged
       || this.modelsPendingClear
   }
@@ -360,6 +379,8 @@ export class CompactConfigCardController {
       this.pendingClear.clear()
       this.autoStaged = undefined
       this.autoPendingClear = false
+      this.enabledStaged = undefined
+      this.enabledPendingClear = false
       this.modelsStaged = false
       this.modelsPendingClear = false
       this.seedFromSnapshot()
@@ -396,6 +417,12 @@ export class CompactConfigCardController {
     } else if (this.autoStaged !== undefined) {
       const effectiveAuto = boolValue(this.snapshot().value?.auto, true)
       if (this.autoStaged !== effectiveAuto) writes.push(() => this.writeSection('auto', this.autoStaged))
+    }
+    if (this.enabledPendingClear) {
+      if (this.userHas('enabled')) writes.push(() => this.clearSection('enabled'))
+    } else if (this.enabledStaged !== undefined) {
+      const effectiveEnabled = boolValue(this.snapshot().value?.enabled, true)
+      if (this.enabledStaged !== effectiveEnabled) writes.push(() => this.writeSection('enabled', this.enabledStaged))
     }
     const models = this.buildModels()
     if (models.invalid) invalid = true
@@ -743,6 +770,8 @@ export class CompactConfigCardController {
     const dirty = this.isDirty
     const effectiveAuto = boolValue(snapshot.value?.auto, true)
     const autoOverridden = this.autoPendingClear ? false : (this.autoStaged !== undefined || this.userHas('auto'))
+    const effectiveEnabled = boolValue(snapshot.value?.enabled, true)
+    const enabledOverridden = this.enabledPendingClear ? false : (this.enabledStaged !== undefined || this.userHas('enabled'))
     const triggerDraft = this.staged.get('trigger')
     let thresholdTokens: number | undefined
     if (this.pendingClear.has('trigger')) thresholdTokens = undefined
@@ -762,6 +791,7 @@ export class CompactConfigCardController {
       saving: this.saving,
       failed: this.failed,
       fields,
+      enabled: { value: this.enabledPendingClear ? true : boolValue(this.enabledStaged, effectiveEnabled), overridden: enabledOverridden },
       auto: { value: this.autoPendingClear ? true : boolValue(this.autoStaged, effectiveAuto), overridden: autoOverridden },
       models: {
         rows,

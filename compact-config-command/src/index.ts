@@ -27,6 +27,7 @@ const USAGE = [
   '  set summarization provider <p> | set summarization model <m> | set summarization maxTokens <int>',
   '  set retries compactionRetries <int> | set retries maxOverflowRetries <int>',
   '  set auto true|false',
+  '  set enabled true|false            # master switch: off = no auto-compact, no archiving',
   '  preset add <provider> <model> [tokens N] [ratio R] [mode M] [retain tokens N|retain ratio R] [disabled]',
   '  preset remove <provider> <model>',
   '  preset set <provider> <model> <field> <value>   # e.g. disabled true|false, tokens 200000',
@@ -64,7 +65,7 @@ function formatConfig(config: ResolvedHandoffConfig): string {
     'archive: ' + JSON.stringify(config.archive),
     'summarization: ' + JSON.stringify(config.summarization),
     'retries: ' + JSON.stringify(config.retries),
-    'auto: ' + String(config.auto),
+    'auto: ' + String(config.auto) + ' | enabled: ' + String(config.enabled),
     'models:',
     models,
   ].join('\n')
@@ -161,7 +162,8 @@ export function apply(ctx: Context): void {
             'measured tokens: ~' + preview.measuredTokens,
             'effective threshold: ' + (Number.isFinite(preview.thresholdTokens) ? String(preview.thresholdTokens) : '\u221e')
               + ' (source: ' + preview.thresholdSource + ')',
-            'preset matched: ' + String(preview.presetMatched) + ' | disabled: ' + String(preview.disabled),
+            'preset matched: ' + String(preview.presetMatched) + ' | disabled: ' + String(preview.disabled)
+              + ' | plugin enabled: ' + String(preview.pluginEnabled) + ' | retain clamped: ' + String(preview.retainClamped),
             'would fire now: ' + String(preview.wouldFire),
             'note: token counts are the harness estimates; the fire point can drift a few percent at large thresholds.',
           ].join('\n'),

@@ -154,7 +154,7 @@ describe('HandoffCompactionEngine', () => {
   it('disabled preset never auto-fires', async () => {
     const root = tempRoot()
     const compact = engine(root, {
-      trigger: { tokens: 1 }, retain: { tokens: 1 },
+      trigger: { tokens: 500 }, retain: { tokens: 100 },
       models: [{ provider: MODEL, model: MODEL, disabled: true }],
       archive: { root },
     })
@@ -216,5 +216,81 @@ describe('HandoffCompactionEngine', () => {
     await expect(compact.compactIfNeeded(agent(session), 'pressure', SIGNAL)).resolves.not.toBeNull()
     expect(archiveNames(root, SESSION_ID).length).toBeGreaterThan(0)
     expect(headText(session)).toContain('**Handoff archive:**')
+  })
+
+  it('enabled:false is the master switch: no pressure compaction, no archive', async () => {
+    const root = tempRoot()
+    const compact = engine(root, {
+      trigger: { tokens: 500 }, retain: { tokens: 100 }, archive: { root },
+      enabled: false,
+    })
+    const session = conversation(4)
+    await expect(compact.compactIfNeeded(agent(session), 'pressure', SIGNAL)).resolves.toBeNull()
+    expect(archiveNames(root, SESSION_ID)).toEqual([])
+  })
+
+  it('enabled:false still delegates context-overflow to the parent (session safety)', async () => {
+    const root = tempRoot()
+    const compact = engine(root, {
+      trigger: { tokens: 500 }, retain: { tokens: 100 }, archive: { root },
+      enabled: false,
+    })
+    const parentSpy = vi.spyOn(BasicCompactionEngine.prototype, 'compactIfNeeded')
+      .mockResolvedValue(null)
+    try {
+      const session = conversation(1)
+      const sessionAgent = agent(session)
+      await expect(compact.compactIfNeeded(sessionAgent, 'context-overflow', SIGNAL))
+        .resolves.toBeNull()
+      expect(parentSpy).toHaveBeenCalledTimes(1)
+      expect(parentSpy).toHaveBeenCalledWith(sessionAgent, 'context-overflow', SIGNAL)
+    } finally {
+      parentSpy.mockRestore()
+    }
+  })
+
+  it('hot-reloaded enabled:false disables auto-compact mid-flight; re-enabling restores it', async () => {
+    const root = tempRoot()
+    const compact = engine(root, {
+      trigger: { tokens: 500 }, retain: { tokens: 100 }, archive: { root },
+    })
+    const session = conversation(4)
+    await expect(compact.compactIfNeeded(agent(session), 'pressure', SIGNAL)).resolves.not.toBeNull()
+
+    writeFileSync(join(root, 'handoff-config.json'), JSON.stringify({
+      trigger: { tokens: 500 }, retain: { tokens: 100 }, archive: { root }, enabled: false,
+    }))
+    await vi.waitFor(() => { expect(compact.handoffConfig.enabled).toBe(false) })
+    await expect(compact.compactIfNeeded(agent(session), 'pressure', SIGNAL)).resolves.toBeNull()
+
+    writeFileSync(join(root, 'handoff-config.json'), JSON.stringify({
+      trigger: { tokens: 500 }, retain: { tokens: 50 }, archive: { root }, enabled: true,
+    }))
+    await vi.waitFor(() => { expect(compact.handoffConfig.enabled).toBe(true) })
+    // Re-enable restores the trigger on a FRESH session: the earlier compaction
+    // of `session` already pulled its measurement below any useful threshold.
+    const session2 = conversation(4)
+    await expect(compact.compactIfNeeded(agent(session2), 'pressure', SIGNAL)).resolves.not.toBeNull()
+  })
+
+  it('a window-relative retain above the resolved threshold clamps instead of poisoning (Decision A)', async () => {
+    const root = tempRoot()
+    // configured retain = 0.9 x 1000 = 900 >= trigger 500; clamped to 499.
+    const compact = engine(root, {
+      trigger: { tokens: 500 }, retain: { ratio: 0.9 }, archive: { root },
+    })
+    expect(compact.handoffConfig.retain.ratio).toBe(0.9)
+    const session = conversation(4)
+    // Whatever the underlying guard decides about the now-small span, the config
+    // poison must be gone: either it compacts, the shrink guard rejects this one
+    // attempt (a per-attempt, content-driven error the run loop handles by
+    // continuing the turn), or no range qualifies. What may NOT happen is the
+    // old per-target feign-failure silent forever-off.
+    const ordered = compact.compactIfNeeded(agent(session), 'pressure', SIGNAL)
+    await expect(ordered.then(() => 'compactOrEmpty' as const, error => {
+      if (!/summary is not smaller|no safe range|unable/i.test(String(error))) throw error
+      return 'guardRejectedThisAttempt' as const
+    })).resolves.toBeDefined()
+    expect(compact.previewPressure(agent(session), 1000).retainClamped).toBe(true)
   })
 })

@@ -45,6 +45,23 @@ describe('parseHandoffConfig', () => {
     expect(() => parseHandoffConfig({ trigger: { ratio: 0.8 }, retain: { ratio: 0.9 } }))
       .toThrow(/retain\.ratio \(0\.9\) must be less than trigger\.ratio \(0\.8\)/)
   })
+  it('rejects an absolute retain at or above the absolute trigger at load (Decision A)', () => {
+    expect(() => parseHandoffConfig({ trigger: { tokens: 1000 }, retain: { tokens: 1000 } }))
+      .toThrow(/retain\.tokens \(1000\) must be less than trigger\.tokens \(1000\)/)
+    expect(() => parseHandoffConfig({
+      models: [{ provider: 'p', model: 'm', trigger: { tokens: 10 }, retain: { tokens: 10 } }],
+    })).toThrow(/models\[0\]: retain\.tokens \(10\) must be less than trigger\.tokens \(10\)/)
+  })
+  it('accepts an absolute trigger with a window-relative retain (clamped at resolve time)', () => {
+    const c = parseHandoffConfig({ trigger: { tokens: 1000 }, retain: { ratio: 0.16 } })
+    expect(c.retain.ratio).toBe(0.16)
+  })
+  it('defaults enabled to true and validates its type', () => {
+    expect(parseHandoffConfig({}).enabled).toBe(true)
+    expect(parseHandoffConfig({ enabled: false }).enabled).toBe(false)
+    expect(() => parseHandoffConfig({ enabled: 'yes' })).toThrow(/enabled must be a boolean/)
+    expect(() => parseHandoffConfig({ enabledz: false })).toThrow(/unknown key "enabledz"/)
+  })
   it('rejects bad enum values', () => {
     expect(() => parseHandoffConfig({ trigger: { mode: 'both' } })).toThrow(/trigger\.mode/)
     expect(() => parseHandoffConfig({ archive: { onFailure: 'retry' } })).toThrow(/archive\.onFailure/)

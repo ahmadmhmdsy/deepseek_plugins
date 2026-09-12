@@ -63,6 +63,8 @@ export interface HandoffConfig {
   summarization?: SummarizationConfig
   retries?: RetriesConfig
   auto?: boolean
+  /** true (default): the mounted engine observes pressure triggers and archives handoffs. false is the plugin master switch: no auto-compact, no archiving, no pointer; overflow recovery and manual compaction still work through the parent. */
+  enabled?: boolean
   /** Per-model presets; exact provider+model match, field-wise merge over globals. */
   models?: ModelPreset[]
 }
@@ -75,5 +77,6 @@ export interface ResolvedHandoffConfig {
   summarization: { provider: string; model: string; maxTokens: number }
   retries: { compactionRetries: number; maxOverflowRetries: number }
   auto: boolean
+  enabled: boolean
   models: ModelPreset[]
 }

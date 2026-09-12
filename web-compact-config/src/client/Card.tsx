@@ -341,6 +341,16 @@ export function CompactConfigCard(props: CompactConfigCardProps) {
 
       <div style={sectionStyle}>
         <Checkbox
+          label="plugin enabled"
+          checked={state.enabled.value}
+          disabled={disabled}
+          overridden={state.enabled.overridden}
+          onEdit={text => { face.edit('enabled', text) }}
+        />
+        <button type="button" style={{ ...buttonStyle, marginLeft: 8 }} disabled={disabled} onClick={sectionReset('enabled')}>
+          reset
+        </button>
+        <Checkbox
           label="auto-compact enabled"
           checked={state.auto.value}
           disabled={disabled}
@@ -350,6 +360,9 @@ export function CompactConfigCard(props: CompactConfigCardProps) {
         <button type="button" style={{ ...buttonStyle, marginLeft: 8 }} disabled={disabled} onClick={sectionReset('auto')}>
           reset
         </button>
+        <p style={hintStyle}>
+          plugin enabled = master switch (off = no auto-compact, no archiving); auto-compact enabled gates only the automatic pressure trigger.
+        </p>
       </div>
 
       <div style={sectionStyle}>

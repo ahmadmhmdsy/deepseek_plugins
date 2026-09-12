@@ -14,7 +14,7 @@ const ARCHIVE_KEYS = new Set(['root', 'gitExclude', 'onFailure'])
 const SUMMARIZATION_KEYS = new Set(['provider', 'model', 'maxTokens'])
 const RETRIES_KEYS = new Set(['compactionRetries', 'maxOverflowRetries'])
 const MODEL_KEYS = new Set(['provider', 'model', 'trigger', 'retain', 'summarization', 'retries', 'disabled'])
-const TOP_KEYS = new Set(['trigger', 'retain', 'archive', 'summarization', 'retries', 'auto', 'models'])
+const TOP_KEYS = new Set(['trigger', 'retain', 'archive', 'summarization', 'retries', 'auto', 'enabled', 'models'])
 
 /** Validate an untrusted raw document and resolve defaults (fail-fast). */
 export function parseHandoffConfig(raw: unknown): ResolvedHandoffConfig {
@@ -29,6 +29,18 @@ export function parseHandoffConfig(raw: unknown): ResolvedHandoffConfig {
   const models = validateModels(config.models)
   if (config.auto !== undefined && typeof config.auto !== 'boolean') {
     throw new Error('handoff config: auto must be a boolean')
+  }
+  if (config.enabled !== undefined && typeof config.enabled !== 'boolean') {
+    throw new Error('handoff config: enabled must be a boolean')
+  }
+  // Absolute-only contradiction is decidable at load (A1): the fire-at level and
+  // the kept tail are both absolute, so retain >= trigger can never resolve.
+  // Ratio-based pairs stay decidable only per model window; resolveHandoffSpec
+  // clamps those instead of poisoning every pre-step with an unresolved throw.
+  if (trigger.tokens !== undefined && retain.tokens !== undefined && retain.tokens >= trigger.tokens) {
+    throw new Error(
+      'handoff config: retain.tokens (' + retain.tokens + ') must be less than trigger.tokens (' + trigger.tokens + ')',
+    )
   }
   if (trigger.ratio !== undefined && retain.ratio !== undefined && retain.ratio >= trigger.ratio) {
     throw new Error('handoff config: retain.ratio (' + retain.ratio + ') must be less than trigger.ratio (' + trigger.ratio + ')')
@@ -45,15 +57,27 @@ export function parseHandoffConfig(raw: unknown): ResolvedHandoffConfig {
     summarization,
     retries,
     auto: config.auto ?? true,
+    enabled: config.enabled ?? true,
     models,
   })
 }
 
-/** Map a resolved handoff config onto the upstream BasicCompactionConfig shape for super(). */
+/**
+ * Map a resolved handoff config onto the upstream BasicCompactionConfig shape for super().
+ * The parent validates a retain ratio against its own resolved threshold ratio; with an
+ * absolute-only trigger the handoff threshold is NOT the parent's ratio semantics (the
+ * subclass override owns pressure), so a window-relative retain must not leak into the
+ * parent's ratio invariant — it is omitted and the subclass clamps at resolve time.
+ */
 export function toBasicConfig(resolved: ResolvedHandoffConfig): Record<string, unknown> {
+  const retainRatio = resolved.retain.ratio !== undefined
+    && resolved.trigger.ratio !== undefined
+    && resolved.retain.ratio < resolved.trigger.ratio
+    ? resolved.retain.ratio
+    : undefined
   return {
     thresholdRatio: resolved.trigger.ratio,
-    retainRatio: resolved.retain.ratio,
+    retainRatio,
     retainTokens: resolved.retain.tokens,
     summarizationProvider: resolved.summarization.provider,
     summarizationModel: resolved.summarization.model,
@@ -64,7 +88,11 @@ export function toBasicConfig(resolved: ResolvedHandoffConfig): Record<string, u
       provider: model.provider,
       model: model.model,
       thresholdRatio: model.trigger?.ratio,
-      retainRatio: model.retain?.ratio,
+      retainRatio: model.retain?.ratio !== undefined
+        && model.trigger?.ratio !== undefined
+        && model.retain.ratio < model.trigger.ratio
+        ? model.retain.ratio
+        : undefined,
       retainTokens: model.retain?.tokens,
       summarizationProvider: model.summarization?.provider,
       summarizationModel: model.summarization?.model,
@@ -206,6 +234,11 @@ function validateModels(raw: unknown): ModelPreset[] {
       ...(config.summarization === undefined ? {} : { summarization: validateSummarization(config.summarization, name + '.summarization') }),
       ...(config.retries === undefined ? {} : { retries: validateRetries(config.retries, name + '.retries') }),
       ...(config.disabled === undefined ? {} : { disabled: config.disabled as boolean }),
+    }
+    if (preset.trigger?.tokens !== undefined && preset.retain?.tokens !== undefined
+      && preset.retain.tokens >= preset.trigger.tokens) {
+      throw new Error(name + ': retain.tokens (' + preset.retain.tokens + ') must be less than trigger.tokens ('
+        + preset.trigger.tokens + ')')
     }
     if (preset.trigger?.ratio !== undefined && preset.retain?.ratio !== undefined
       && preset.retain.ratio >= preset.trigger.ratio) {

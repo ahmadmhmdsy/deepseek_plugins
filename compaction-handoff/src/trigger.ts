@@ -24,6 +24,8 @@ export interface HandoffCompactSpec {
   readonly disabled: boolean
   /** Which configured limit produced the threshold (diagnostics). */
   readonly thresholdSource: 'default' | 'ratio' | 'tokens' | 'ratio+tokens'
+  /** True when the resolved keep-tail was clamped to threshold-1 (it exceeded the fire-at level). */
+  readonly retainClamped: boolean
 }
 
 /** Whether the resolved trigger math needs the model context window. */
@@ -90,14 +92,16 @@ export function resolveHandoffSpec(
     thresholdSource = 'ratio+tokens'
   }
 
-  const retainTokens = retain.tokens ?? Math.floor(contextWindow! * retain.ratio!)
-  if (retainTokens >= thresholdTokens) {
-    throw new TargetPressureConfigError(
-      targetKey,
-      'compaction-handoff: ' + targetKey + ' retainTokens (' + retainTokens + ') must be less than '
-      + 'threshold tokens ' + thresholdTokens,
-    )
-  }
+  const configuredRetain = retain.tokens ?? Math.floor(contextWindow! * retain.ratio!)
+  // Clamp instead of throwing (Decision A, 2026-09-12): a ratio-based retain
+  // resolves against the model window, so a small absolute token trigger plus the
+  // (window-relative) retain floor is contradictory only AT RESOLUTION time —
+  // throwing here poisons every pre-step and the run loop swallows the error with
+  // a warn-once, silently disabling auto-compact. Keeping threshold-1 tokens
+  // honors the trigger exactly; the caller observes retainClamped and warns.
+  let retainTokens = configuredRetain
+  const retainClamped = configuredRetain >= thresholdTokens
+  if (retainClamped) retainTokens = Math.max(thresholdTokens - 1, 0)
 
   const summarization = preset?.summarization ?? {}
   const retries = preset?.retries ?? {}
@@ -112,6 +116,7 @@ export function resolveHandoffSpec(
     maxTokens: summarization.maxTokens ?? config.summarization.maxTokens,
     disabled: preset?.disabled ?? false,
     thresholdSource,
+    retainClamped,
   })
 }
 
