@@ -276,6 +276,46 @@ to confirm nothing moved, then continue at Step 12-T1 below.
 - `deepFreeze` comes from `@deepseek-ai/dsh-llm` in BOTH checkouts (verified 2026-09-10; recorded in MEMORY.md §1).
 - git: this workspace is its own repo (remote ahmadmhmdsy/*). `node_modules/` is gitignored; junctions live there. Commit after every green task (house pattern).
 
+## 8b. INCIDENT — "auto-compact not working on agents" (response session, 2026-09-12)
+
+User report: set a trigger level, the agent crossed it, no auto-compact. Live-tested on
+the 3082 instance (PID 3620, `--profile web --patch .../cordis.patch.yml --port 3082`)
+with a tiny schedule hot-written into `handoff-config.json` (the store + M3 card
+hot-reload it). Raw evidence in `.live-test/` (gitignored).
+
+- PASS — engine + hot-reload + archive on tiny config (`trigger {tokens:1000},
+  retain {tokens:400}`, absolute archive root): six compaction archives in ~15s
+  (001-006 under `.live-test/handoffs/session-0b51d21f...`), "Context compacted" rows
+  visible in the session UI, index.md populated (model opencode-go/omen-alpha), later
+  turns compacted repeatedly (9/4/1-item entries).
+- FAIL REPRO — the shipped/user config SHAPE is poisoned: with `trigger {tokens:1000}`
+  and either `retain {ratio:0.16}` or `retain {tokens:40000}`, turns with 49k-84k
+  logged input tokens above the 1000-token trigger compacted ZERO times. Mechanism
+  (compaction-basic/src/index.ts:155-162 + trigger.ts:93-100): resolveHandoffSpec throws
+  "retainTokens (N) must be less than threshold tokens" on every pre-step;
+  retain.ratio resolves against the CONTEXT WINDOW (0.16 x window, e.g. >26000 for
+  windows >162.5k), and the pre-step catch warn-onces per target and continues the
+  turn — auto-compact silently never fires. load-time validation cannot catch it
+  (window-relative retain).
+- Root cause for the report: any trigger threshold below ~0.16x context window (2026
+  default retain) is dead on arrival; only a swallowed harness-console warn marks it.
+- Deployment fact — the 3080 main GUI boots WITHOUT --patch (PID 9084 cmdline
+  `node --import tsx/esm apps/cli/src/bin.ts "web"`): the plugins never load there;
+  base compaction-basic defaults apply (or nothing), and GUI-entered trigger settings
+  can only affect patched boots (3082).
+- Subagent path — verified statically: children are created in-process
+  (subagent-in-process-driver, parent.ctx.agents.create) on the shared root event bus;
+  cordis dispatch filters ancestor hooks via Context.filter and the driver chains child
+  pre-steps through next(), so the engine sees child steps. Live child-session archive
+  NOT observed: two GUI-forced spawn attempts failed on the model side ("omen-alpha
+  returned a completed response with no content"). Same guarantee as the parent path,
+  pending that live evidence.
+- NEEDS_USER_DECISION — fix direction: (A) clamp retain to threshold-1 in
+  resolveHandoffSpec (warn each clamp) + reject absolute retain.tokens >= trigger.tokens
+  at load; (B) keep the throw, surface it once into the session UI + card guard.
+  Recommendation: A. User's original handoff-config.json restored verbatim after the
+  tests (backup: .live-test/handoff-config.json).
+
 ## 9. File inventory (workspace)
 
 ```

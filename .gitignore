@@ -7,3 +7,4 @@ dist/
 *.log
 Thumbs.db
 scripts/.dsh-target.txt
+.live-test/
