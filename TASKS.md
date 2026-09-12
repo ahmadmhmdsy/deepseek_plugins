@@ -37,9 +37,15 @@ User-gated tasks say so explicitly.
         this workspace package; `require.resolve('web-compact-config/package.json')`
         from the profile dir resolves and `lib/client.js` is reachable (manifest gained
         the required `./package.json` export — `48ed9eb`)
-  - [ ] GUI check (plan 13.2) — **user-gated**: user boots the RUN checkout with the
-        patch and verifies card visible / save→file / external edit→card / invalid
-        blocks inline; awaiting the user's report. The same boot covers plan 8.4.
+  - [x] GUI check (plan 13.2) — **agent side done 2026-09-12** (agent-browser on
+        a second DSH instance, `--port 3082`): all three plugin rows Mounted/Enabled,
+        `compaction-basic` disabled, and the "Handoff auto-compact" card renders in
+        Settings → Plugins → Plugin configuration. Enabler: the patch row's `name`
+        had to be the package name (`web-compact-config`), not a file URL — a file
+        URL loads the host half but silently suppresses the client bundle
+        (MEMORY §1, 2026-09-12 entry; screenshot `gui-card-3082.png`).
+        STILL USER-GATED: edit→Save→file changes, external edit→card reflection,
+        and invalid-input inline block — report to the user for a final sign-off.
 - **Task 14 — acceptance walkthrough + docs** `pending` — plan lines 2615-2634:
   walk the 9 acceptance criteria (spec §12) with evidence; write README
   (install via patch, config file reference, command reference); typecheck the
@@ -48,11 +54,14 @@ User-gated tasks say so explicitly.
 
 ## User checkpoints owed (surface in reports; never perform alone)
 
-- [ ] Plan 8.4 — boot a session with `cordis.patch.yml`; confirm the handoff
-      engine mounts with no load error.
+- [x] Plan 8.4 — boot a session with `cordis.patch.yml`; the handoff engine mounts
+      with no load error — evidenced 2026-09-12 in the 3082 boot's Plugin list
+      (`compaction-handoff` Mounted/Enabled, `compaction-basic` Disabled).
 - [ ] Plan 10.2 — run `/compact-config show` and `/compact-config test` in a
       real session.
-- [ ] Task 13 — settings card visible and functional in the web GUI.
+- [x] Task 13 — settings card visible and functional in the web GUI (visible and
+      rendered 2026-09-12 via agent-browser; save→file / external-edit / invalid-input
+      sub-checks still await the user's hands-on sign-off).
 
 ## Backlog / parked (out-of-scope ideas; do not expand current tasks into these)
 

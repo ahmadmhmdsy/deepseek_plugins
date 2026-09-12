@@ -53,6 +53,21 @@ durable, reusable lessons and cross-checkout facts.
   `name + '/package.json'` anchored at the profile dir — without that export the boot scan fails
   (no boot row, card never loads) even when the junction is in place. Verify a delivery junction
   with `require.resolve('<name>/package.json', { paths: ['<profile dir>'] })`. (2026-09-10)
+- A second, separate DSH instance is fine on ANOTHER port with the same command
+  shape as the `web` app owns the port flag: the launcher flags (`--profile`,
+  `--patch`) must come FIRST — everything after the launcher's first unknown
+  token is handed verbatim to the app (which knows only `--host/--port/
+  --trusted-host`): `dsh --profile web --patch <patch> --port 3081` works,
+  `--port` placed before `--patch` errors with `unknown option '--patch'`.
+- **Out-of-tree patch rows must name the PACKAGE, not a file URL** (2026-09-12,
+  GUI-verified fix): `ClientModuleRegistry.resolveMeta` keys on the loader
+  ENTRY's `name` — a row with `name: 'file:///...index.ts'` mounts the HOST half
+  (the Plugin list shows it Mounted/Enabled) but gets a negative client verdict
+  (require.resolve on a URL fails), so `/plugins/<pkg>/client.js` is never served
+  and the settings card silently never appears. Fix: `name: web-compact-config`
+  (the registry resolves the package through the delivery junction and reads its
+  own `dsh.client` declaration; the host half loads via the package main → same
+  src/index.ts). Symptom check: page never requests `/plugins/<name>/client.js`.
 
 ## 2. Cross-checkout API drift (verified by hash + diff, 2026-09-10)
 

@@ -239,13 +239,32 @@ to confirm nothing moved, then continue at Step 12-T1 below.
   `handoff-config.json` changes on disk; (c) an external file edit is reflected on the next
   snapshot refresh; (d) invalid input blocks the save inline. The same boot is plan 8.4 evidence.
 
+### Patch boot verification (2026-09-12, user-requested)
+- Booted a second DSH instance on `--port 3082` (profile `web`, RUN checkout) for verification:
+  Plugin list shows compaction-handoff / compact-config-command / web-compact-config all
+  Mounted+Enabled and compaction-basic Disabled → plan 8.4 evidence. Secondary-instance boot
+  syntax: launcher flags first, app flags after — `dsh --profile web --patch <patch> --port 3081`
+  works; `--port` placed before `--patch` errors `unknown option '--patch'`.
+- **Found + fixed the silent card failure**: the patch row's `name` was the file:// URL — the
+  host half mounted, but `ClientModuleRegistry.resolveMeta` keys on the entry name as a package
+  specifier, so the URL got a negative verdict and `/plugins/web-compact-config/client.js` was
+  never served (no console error; symptom: the page never requests that URL). Fix: the row now
+  carries `name: web-compact-config` (host loads via package main → same src/index.ts; the
+  registry reads the package's own `dsh.client` declaration). After a reboot the card renders
+  ("Handoff auto-compact", full form; screenshot `gui-card-3082.png`). Lesson in MEMORY §1
+  (2026-09-12 entry). Note: my own `--profile web2` (fresh profile) boot hung silently with no
+  listener and no output under a job wrapper — profile `web` boots fine interactively; cause
+  uninvestigated, use `web` for boots.
+- Remaining user checkpoints: card edit→Save→file (b), external-edit adoption (c), invalid-input
+  inline refusal (d), and plan 10.2 (`/compact-config show` + `/compact-config test`).
+
 ## 7. Remaining TODO (Tasks 11-14)
 
 - [x] **Task 11 — M3 host bridge** — DONE 2026-09-10, commit `c299596`. Settings seam verified on RUN first (register options `{base, applies, validate}`, scope `get/watch/update/replace`; agent-presets is the in-tree precedent). Bridge: no `base` layer (deviation §5.10), echo-guarded commit watcher, debounced dir re-adopt with refusal warnings. Tests: 12 (schema defaults/refusals, echo-guard, 6 service-level integration tests over the real FileSettingsProvider). Suite 71/71 (10 files) on RUN.
 - [x] **Task 12 — M3 client card** — DONE 2026-09-10, commit `a23ca4d`: tsc clean, suite 82/82 (11 files) on RUN, bundle 43.11 kB (banner + purity gate). Plan lines 2457-2599.
-- [ ] **Task 13 — M3 wiring + GUI verification** (plan 2599-2615) `in_progress`: patch entry + composition check PASS (`811579e`); delivery junction created (user-approved); `./package.json` export fixed (`48ed9eb`); GUI check (plan 13.2) handed to the user — awaiting report.
+- [ ] **Task 13 — M3 wiring + GUI verification** (plan 2599-2615) `in_progress`: patch entry + composition check PASS (`811579e`); delivery junction created (user-approved); `./package.json` export fixed (`48ed9eb`); GUI card rendering **verified via agent-browser 2026-09-12** after fixing the patch row name (see "Patch boot verification" above); save→file / external-edit / invalid-input sub-checks still need the user's hands-on sign-off.
 - [ ] **Task 14 — acceptance walkthrough + docs** (plan 2615-2634): walk the 9 acceptance criteria (spec §12) with evidence; write user docs (README-style usage: install via patch, config file reference, command reference); check off plan checkboxes only for what actually passed; final report to the user with PASS/FAIL/SKIPPED labels.
-- [ ] **User checkpoints owed** (do not perform alone): plan 8.4 (boot session with the patch; confirm engine mounts, no load error), 10.2 (run `/compact-config show` + `/compact-config test` in a real session), Task 13 GUI card check. Surface these clearly in the final report.
+- [ ] **User checkpoints owed** (do not perform alone): plan 8.4 (evidenced 2026-09-12 via the 3082 boot Plugin list), 10.2 (run `/compact-config show` + `/compact-config test` in a real session), Task 13 hands-on sub-checks (card save→file, external-edit adoption, invalid-input refusal). Surface these clearly in the final report.
 
 ## 8. Gotchas (hard-won)
 

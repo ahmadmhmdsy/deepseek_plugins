@@ -4,16 +4,19 @@
 # checkouts — the plugin's imports resolve through deepseek_plugins/node_modules
 # junctions, which scripts/link-node-modules.mjs re-points at whichever
 # checkout boots the harness.
+# Windows absolute paths MUST be file:// URLs: the loader's tree.import()
+# does a raw import(name) for absolute specifiers, and import('D:/...')
+# fails with ERR_UNSUPPORTED_ESM_URL_SCHEME (protocol 'd:').
 - id: compaction-basic
   disabled: true
 - insert:
     - id: compaction-handoff
-      name: 'D:/my_deepseek_harness/deepseek_plugins/compaction-handoff/src/index.ts'
+      name: 'file:///D:/my_deepseek_harness/deepseek_plugins/compaction-handoff/src/index.ts'
       config:
         configFile: 'D:/my_deepseek_harness/deepseek_plugins/handoff-config.json'
     - id: compact-config-command
-      name: 'D:/my_deepseek_harness/deepseek_plugins/compact-config-command/src/index.ts'
+      name: 'file:///D:/my_deepseek_harness/deepseek_plugins/compact-config-command/src/index.ts'
     - id: web-compact-config
-      name: 'D:/my_deepseek_harness/deepseek_plugins/web-compact-config/src/index.ts'
+      name: web-compact-config
       config:
         configFile: 'D:/my_deepseek_harness/deepseek_plugins/handoff-config.json'
