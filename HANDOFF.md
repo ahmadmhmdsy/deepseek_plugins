@@ -299,10 +299,16 @@ hot-reload it). Raw evidence in `.live-test/` (gitignored).
   (window-relative retain).
 - Root cause for the report: any trigger threshold below ~0.16x context window (2026
   default retain) is dead on arrival; only a swallowed harness-console warn marks it.
-- Deployment fact — the 3080 main GUI boots WITHOUT --patch (PID 9084 cmdline
-  `node --import tsx/esm apps/cli/src/bin.ts "web"`): the plugins never load there;
-  base compaction-basic defaults apply (or nothing), and GUI-entered trigger settings
-  can only affect patched boots (3082).
+- Deployment fact — UPDATED 2026-09-12 later same-day: the "no --patch flag = plugins
+  never load" diagnosis was WRONG. The web profile's OWN `cordis.patch.yml`
+  (`C:\Users\Ahmad Mahmoud\.dsh\profiles\web\cordis.patch.yml`) is auto-compiled
+  into every boot of that profile (apps/cli/src/profile-boot.ts: patch layers =
+  bundle layers, the profile's own cordis.patch.yml, then --patch overlays), and it
+  wires all three plugins permanently. Live disproof on the RUNNING 3080 PID 9084
+  (boot 08:31, no --patch flag): this agent's own session (2264f2e2) produced 33
+  engine-written compaction archives (001-033, 11:04:34-11:52:33), including a
+  burst right after the profile patch was written at 11:04:16 — no restart ever
+  happened. The suite is live on 3080.
 - Subagent path — verified statically: children are created in-process
   (subagent-in-process-driver, parent.ctx.agents.create) on the shared root event bus;
   cordis dispatch filters ancestor hooks via Context.filter and the driver chains child

@@ -70,7 +70,8 @@ User-gated tasks say so explicitly.
       with no load error — evidenced 2026-09-12 in the 3082 boot's Plugin list
       (`compaction-handoff` Mounted/Enabled, `compaction-basic` Disabled).
 - [ ] Plan 10.2 — run `/compact-config show` and `/compact-config test` in a
-      real session.
+      real session (3080 now confirmed running the suite live via its profile
+      patch — session 2264f2e2 archived 001-033; no restart needed).
 - [x] Task 13 — settings card visible and functional in the web GUI (visible and
       rendered 2026-09-12 via agent-browser; save→file / external-edit / invalid-input
       sub-checks still await the user's hands-on sign-off).
