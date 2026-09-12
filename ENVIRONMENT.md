@@ -3,7 +3,7 @@
 Records the durable machine facts for this workspace. Re-verify only what looks
 stale; update this file after any tool/version/checkout change.
 
-**Last verified:** 2026-09-10.
+**Last verified:** 2026-09-13.
 
 ## Machine
 
@@ -73,6 +73,18 @@ These existed nowhere and cost real time to discover:
 - Profile patch entries whose ids match existing loader entries MERGE config into them (`- id: X / config: {...}`); `insert:` with a duplicate id is a boot error. Client bundles must be reachable BY PACKAGE NAME from `$DSH_HOME\profiles\node_modules` (file-URL rows load the host half but silently suppress the client bundle).
 - Isolated-test recipe for harness features (cheap-token rule, user directive): test on a separate port with its own patch (`--port 3082 --patch .dsh-test/cordis.patch.test.yml`) pointing the plugin at an isolated store (`.dsh-test/handoff-config-test.json`). RPC wire format: `POST http://127.0.0.1:<port>/api/{method}` with body `{type:'client-request', rpcId:'rN', method, payload}` converted with JSON depth 8.
 - Timing: hot reloads and pre-step compactions are observable to ~1 s via file mtimes + archive index.md timestamps; machine-verifiable timestamps beat "happens after" narratives.
+
+## Agent tooling drift (learned live 2026-09-13)
+
+- **agent-browser CLI behavior changed with the installed version**: screenshot
+  syntax is now `screenshot [selector] [path]` with `--full` for full page —
+  the old `--full-page` spelling is parsed as an argument (it once created a
+  stray file literally named `--full-page`), and there is no `help`
+  subcommand (use `agent-browser --help` / `skills get core`).
+- **PATH asymmetry between executors:** the pwsh tool's fresh process lacked
+  `git` (and `rg`) on PATH on 2026-09-13 while run_code's execSync (cmd
+  shell) had them. If a command is suddenly "not recognized" in one executor,
+  try the other before assuming it is missing.
 
 ## Never do
 

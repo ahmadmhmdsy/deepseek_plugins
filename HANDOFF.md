@@ -374,6 +374,33 @@ enable/disable the plugin from the gui".
   (001, 002, index.md), config .dsh-test/handoff-config-test.json (final:
   enabled:true, trigger tokens:10000, retain tokens:8000, auto:true).
 
+## 8e. Card UI evolution + collapse disclosure (2026-09-13)
+
+- **Impeccable-style redesign (682f923):** design tokens, status pills, section
+  captions, banners, primary Save — all inline styles (no CSS pipeline; bundle
+  purity gate: react + own files only).
+- **Incident — card vanished (070adb0 / b4c3970):** the redesign called
+  `border(...)` without defining it; the throw at bundle import silently
+  dropped the card (no console-visible plugin error). After the fix the card
+  STAYED invisible because of the `?rev=<boot-hash>` HTTP-cache staleness (rev
+  unchanged by in-place rebuilds). Verified twice: server bytes correct, then
+  in-page `fetch(url,{cache:'reload'})` + reload → card present. Full record in
+  docs/incidents/2026-09-13-card-mount-border-missing-and-stale-http-cache.md;
+  cache + disclosure notes were added to web-compact-config/README.md so reuse
+  does not require re-reading the incident.
+- **Collapsible card (500ee19, user request):** the card now behaves like the
+  built-in Shell/Web-search cards — an always-visible header (title +
+  description + status pill + rotating chevron) toggles a card-local open
+  state; the body (all sections, banners, save/discard footer) mounts only
+  while open. Mirrors `ui-settings-plugins/client/PluginCard.tsx` with
+  inline-styled chrome and an inline-SVG chevron (bundle purity gate).
+  Verified live 2026-09-13 in an isolated agent-browser session against 3080
+  (read-only): collapsed by default, open shows all sections, second click
+  collapses, aria-expanded flips — screenshots
+  .live-test/card-open-drawer.png / card-closed.png. Suite after: 95/95 (11
+  files) on RUN. Session commits: 0078b0e, 682f923, 070adb0, b4c3970, 500ee19
+  — origin/master at 500ee19.
+
 ## 9. File inventory (workspace)
 
 ```

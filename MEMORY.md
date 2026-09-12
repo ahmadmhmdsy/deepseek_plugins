@@ -185,6 +185,24 @@ durable, reusable lessons and cross-checkout facts.
   archive/pointer; overflow recovery still delegates to the parent for safety). Card
   checkbox + `/compact-config set enabled true|false`; test output shows plugin/retain state.
 - **Live-verified 2026-09-12 (auto-compact "not working" investigation):** the retain/threshold contradiction POISONS auto-compact silently. `resolveHandoffSpec` throws when `retainTokens >= thresholdTokens` (retain.ratio resolves against the CONTEXT WINDOW, not the threshold); the parent's `agent/pre-step` catch treats it as transient — warn-once per target then `next()` ("step compaction failed ... continuing the turn") — so compaction NEVER fires. Live A/B on 3082 (trigger.tokens=1000): retain {tokens:400} -> 6 archived compactions; retain {ratio:0.16} and retain {tokens:40000} -> ZERO compaction, only a swallowed console warn. Any ABSOLUTE token trigger below ~0.16x contextWindow is dead on arrival. Second fact (CORRECTED same day): a bare `dsh web` boot needs NO --patch flag — the profile patch (`$DSH_HOME/profiles/web/cordis.patch.yml`) is compiled into the web profile automatically (profile-boot.ts). Live proof on un-restarted PID 9084: agent session 2264f2e2 archived 001-033 on 3080. Profile patch edits apply on the next boot of that profile; `--patch` is only for additional overlays. Parent agents DO compact (same path as children; subagent children run in-process on the shared root event bus, so their pre-steps reach the engine too; live child verification awaited a reliable spawn). Also: fast turns fire the compact+archive flow repeatedly mid-turn (6 archives in ~15s at a 1000-token trigger) — a flood risk at very small thresholds.
+- Card UI facts (2026-09-13):
+  - The card follows the built-ins' disclosure design
+    (`packages/client/ui-settings-plugins/src/client/PluginCard.tsx`): header
+    `<button aria-expanded>` + card-local `useState(false)`; the body is NOT in
+    the tree while collapsed. Mirror that pattern for future cards; the client
+    bundle purity gate means the chevron must be inline SVG, and CSS modules /
+    icon packages cannot be imported.
+  - ANY throw at bundle import (e.g. the 2026-09-13 `ReferenceError: border is
+    not defined` from a missing helper) makes the loader silently drop the card
+    entry — a broken card vanishes without a console-visible plugin error.
+  - The `?rev=<boot-hash>` HTTP-cache trap: `/plugins/web-compact-config/client.js`
+    is keyed by an unchanged rev after an in-place tsdown rebuild — browsers can
+    keep the old broken bytes. Fix in-page: `fetch(url,{cache:'reload'})`, then
+    reload; Ctrl+F5 for users. Full record:
+    docs/incidents/2026-09-13-card-mount-border-missing-and-stale-http-cache.md.
+  - `lib/client.js` is gitignored, so pushed commits carry only the SOURCE:
+    after a fresh clone, run `npx tsdown` in `web-compact-config/` before the
+    first patched boot (MissingClientBundleError otherwise).
 - The card's edit surface on RUN: `ctx.settingsScope.bind({namespace})` exposes
   per-field path ops only (`set(field)`/`unset(field)`) — nested handoff
   sections are written as whole-section objects (`set('trigger', {...})`); the

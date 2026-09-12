@@ -25,6 +25,9 @@ User-gated tasks say so explicitly.
 | Plan Task 11 — M3 host bridge (web-compact-config) | `c299596` | 71/71 (10 files) on RUN; 12 bridge tests incl. 6 service-level integration tests over the real FileSettingsProvider |
 | Task 11 deviations ledger + M3 discoveries | `89291e7` | HANDOFF §5.9-5.15, §6b |
 | Plan Task 12 — M3 client card (web-compact-config) | `a23ca4d` | tsc clean; 82/82 (11 files) on RUN; bundle 43.11 kB (loader banner, `react/jsx-runtime` external); deviations §5.16-5.18 |
+| Per-plugin READMEs (user request) | `0078b0e` | compaction-handoff / compact-config-command / web-compact-config README.md |
+| Card UI redesign + mount-fix + incident record | `682f923` `070adb0` `b4c3970` | 95/95 after fix; card restored in live GUI (cache-bust proven); docs/incidents/2026-09-13-card-mount-border-missing-and-stale-http-cache.md |
+| Collapsible disclosure card like built-ins (user request) | `500ee19` | live GUI round-trip verified (expand/collapse + aria-expanded); screenshots .live-test/card-open-drawer.png & card-closed.png; suite 95/95; pushed origin `500ee19` |
 
 ## Next (queued — approved plan Tasks 11-14)
 

@@ -74,3 +74,16 @@ controller). The rendered card itself is user-verified in the live GUI:
   source-loaded plugins).
 - A card edit failing validation reports the error in-card and leaves the store
   untouched (atomic writes).
+- **Cache note (rebuilds):** the GUI serves the card as
+  `/plugins/web-compact-config/client.js?rev=<boot-hash>`; that `rev` does NOT
+  change on an in-place `npx tsdown` rebuild, so the browser can keep serving
+  the previously cached bundle. After rebuilding, bust the cache once
+  (`fetch(url, { cache: 'reload' })` in the page console) or hard-refresh
+  (Ctrl+F5), or the card may keep showing stale behavior. Details:
+  `docs/incidents/2026-09-13-card-mount-border-missing-and-stale-http-cache.md`.
+- The card follows the built-in plugin cards' disclosure pattern (title +
+  description header always visible; the body mounts only while open), mirroring
+  `ui-settings-plugins/client/PluginCard.tsx`; the status pill
+  (unsaved/invalid/saving/failed) rides on the header so a collapsed card still
+  reports state. Live evidence: `.live-test/card-open-drawer.png` /
+  `.live-test/card-closed.png` (2026-09-13, commit 500ee19).
