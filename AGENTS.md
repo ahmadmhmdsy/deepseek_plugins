@@ -1,5 +1,16 @@
 # AGENTS.md — agent guide & document map
 
+**Standing rule — document every issue and its fix.** Whenever debugging, testing,
+or live verification surfaces a real issue (bug, misdiagnosis, silent failure,
+deferral behavior), record BOTH the issue and its fix/effects durably before
+closing the work: root cause (what was actually wrong), the fix or verdict (with
+commit hash), the evidence (timestamps/files/commands), and any honest caveats.
+Write cross-referenced entries — token-config knowledge in MEMORY, narrative in
+HANDOFF, and a self-contained reusable record under
+`docs/incidents/<date>-<topic>.md` — so a future agent can reuse the diagnosis
+without re-deriving it. Raw test rigs go under a gitignored dir (e.g.
+`.live-test/`, `.dsh-test/`); the docs keep the conclusions.
+
 Any agent working in this repo continues one project: build the **auto-compact
 handoff plugin suite for DeepSeek Harness (DSH)** — configurable auto-compact
 triggers (percentage and/or absolute tokens, per-model presets), a model-written
@@ -24,6 +35,7 @@ and fixes the repo-specific conventions CLAUDE.md points here for.
 | **Memory** (lessons & decisions) | [MEMORY.md](./MEMORY.md) | before touching anything non-obvious | every hard-won gotcha or user decision, immediately |
 | **Environment** (what we run on) | [ENVIRONMENT.md](./ENVIRONMENT.md) | before running anything | after any tool/version/checkout change |
 | Usage (humans) | `README.md` — **does not exist yet**; created in Task 14 | after Task 14 | when commands or usage change |
+| **Incidents** (issue + fix records) | `docs/incidents/<date>-<topic>.md` | when a recorded issue recurs or is referenced | per the standing rule above: every real issue gets its issue+fix record |
 
 The five an agent needs before doing anything: spec+plan (what to build),
 HANDOFF (where we are), TASKS (what's next), MEMORY (what we learned),
