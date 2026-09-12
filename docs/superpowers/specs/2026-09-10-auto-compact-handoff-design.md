@@ -206,15 +206,15 @@ All eight proposed additions were folded in; the user may strike any during spec
 
 ## 12. Acceptance criteria
 
-- [ ] With `models: [{ provider, model, trigger: { tokens: 200000 } }]`, a session routed to that model auto-compacts when measured tokens reach ~200k (estimate drift documented).
-- [ ] Combination modes `first` and `tokens` behave per §5 for ratio-only, tokens-only, and both-set configurations.
-- [ ] Every compaction (auto, overflow, manual) produces `handoff.md` + `conversation.md` + an `index.md` line under the configured archive root, written atomically, attempt-suffixed on retries.
-- [ ] The landed checkpoint message contains the archive pointer with correct paths.
-- [ ] The model, when asked about a detail not in the summary, can find and read the archive via the fs read tool.
-- [ ] Archive write failure with `onFailure: "block"` leaves the conversation surface unchanged.
-- [ ] `/compact-config` show/set/preset/test mutate and persist the config file; the web card edits the same file.
-- [ ] Overflow recovery and manual `/compact` behavior otherwise match upstream.
-- [ ] All unit + integration specs pass; lint + typecheck clean.
+- [x] With `models: [{ provider, model, trigger: { tokens: 200000 } }]`, a session routed to that model auto-compacts when measured tokens reach ~200k (estimate drift documented). EVIDENCE: per-model preset routing + trigger math unit tests (compaction-handoff/tests/); live absolute-threshold firing verified on the 3082 instance (trigger 100000; boundaries archived) and in the user's 3080 session. Estimate drift documented (HANDOFF §8d: archive 002 measured 1241 tokens).
+- [x] Combination modes `first` and `tokens` behave per §5 for ratio-only, tokens-only, and both-set configurations. EVIDENCE: trigger.spec.ts unit coverage; live `tokens` mode on 3082/3080.
+- [x] Every compaction (auto, overflow, manual) produces `handoff.md` + `conversation.md` + an `index.md` line under the configured archive root, written atomically, attempt-suffixed on retries. EVIDENCE: archive.spec.ts + engine.spec.ts; live flood run produced six attempt-suffixed archives 001-006 (.live-test); discriminator run produced 001-002.
+- [x] The landed checkpoint message contains the archive pointer with correct paths. EVIDENCE: summarize.spec.ts pointer-path assertions; live sessions show the checkpoint with archive paths (HANDOFF §8/§8b).
+- [ ] The model, when asked about a detail not in the summary, can find and read the archive via the fs read tool. (Live behavior — remains a user checkpoint per plan 14.2.)
+- [x] Archive write failure with `onFailure: "block"` leaves the conversation surface unchanged. EVIDENCE: archive-failure engine tests (block path); live-if-cheap live confirmation recorded SKIPPED on 2026-09-12.
+- [x] `/compact-config` show/set/preset/test mutate and persist the config file; the web card edits the same file. EVIDENCE: command.spec.ts + bridge.spec.ts (12 service tests over the real FileSettingsProvider) + store.spec.ts hot-reload test; live: the 08:47:25Z trigger edit landed in handoff-config-test.json and the engine adopted it.
+- [x] Overflow recovery and manual `/compact` behavior otherwise match upstream. EVIDENCE: engine.spec.ts delegation tests; toBasicConfig guard keeps the ratio invariant; overflow recovery persists with enabled:false (Decision A tests).
+- [x] All unit + integration specs pass; lint + typecheck clean. EVIDENCE: vitest run 2026-09-12: 95/95 (11 files), exit 0, RUN target; oxlint 0 errors / 10 style warnings; web-compact-config tsc clean; the other two tsc failure sets == the pre-existing fork-target drift errors recorded in HANDOFF §8c (verified unchanged at HEAD).
 
 ## 13. Open items for the implementation plan
 

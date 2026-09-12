@@ -51,11 +51,18 @@ User-gated tasks say so explicitly.
         08:47:22.714Z -> edit 08:47:25.384Z -> 002 08:47:26.248Z); raising the
         trigger silences compaction. HANDOFF §8d / MEMORY §4b concluded
         (commit c665b84). Test artifacts gitignored under .dsh-test/.
-- **Task 14 — acceptance walkthrough + docs** `pending` — plan lines 2615-2634:
-  walk the 9 acceptance criteria (spec §12) with evidence; write README
-  (install via patch, config file reference, command reference); typecheck the
-  other two packages; check plan checkboxes only for what actually passed;
-  final report with PASS/FAIL/SKIPPED.
+- **Task 14 — acceptance walkthrough + docs** `in_progress` (agent side done
+  2026-09-12; two live user checkpoints remain):
+  - [x] 14.1 — vitest 95/95 (11 files) exit 0 on RUN (fresh run 11:53); oxlint
+        0 errors / 10 style warnings; tsc: web-compact-config clean; the other two
+        == the pre-existing fork-target drift ledger (HANDOFF §8c), verified
+        unchanged.
+  - [x] 14.3 — docs/compaction-handoff.md (full reference) + README.md (quickstart).
+  - [x] 14.4 — spec §12 checkboxes updated with evidence pointers (8/9 checked;
+        5th — model reads archive live — left unchecked as a user checkpoint).
+  - [ ] 14.2 live run-through with the user: model-reads-archive check + confirm
+        `first` mode live + manual `/compact`/overflow observation. Remaining
+        steps are USER-GATED (never performed by the agent).
 
 ## User checkpoints owed (surface in reports; never perform alone)
 
