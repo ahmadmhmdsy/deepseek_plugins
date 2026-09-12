@@ -46,6 +46,11 @@ User-gated tasks say so explicitly.
         (MEMORY §1, 2026-09-12 entry; screenshot `gui-card-3082.png`).
         STILL USER-GATED: edit→Save→file changes, external edit→card reflection,
         and invalid-input inline block — report to the user for a final sign-off.
+  - [x] Hot-reload discriminator (post-user-report): mid-turn compact fires
+        ~0.9 s after a trigger edit on the isolated 3082 instance (001
+        08:47:22.714Z -> edit 08:47:25.384Z -> 002 08:47:26.248Z); raising the
+        trigger silences compaction. HANDOFF §8d / MEMORY §4b concluded
+        (commit c665b84). Test artifacts gitignored under .dsh-test/.
 - **Task 14 — acceptance walkthrough + docs** `pending` — plan lines 2615-2634:
   walk the 9 acceptance criteria (spec §12) with evidence; write README
   (install via patch, config file reference, command reference); typecheck the
