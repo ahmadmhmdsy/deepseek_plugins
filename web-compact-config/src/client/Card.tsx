@@ -12,7 +12,7 @@
  *
  * @module web-compact-config/client/Card
  */
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import type { InjectFace, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type { CompactConfigCardFace, FieldView, ModelRowView } from './controller.ts'
@@ -369,6 +369,90 @@ function Row(props: { index: number; row: ModelRowView; disabled: boolean; face:
 }
 
 /**
+ * Card disclosure chrome, mirroring the built-in plugin cards (shell, web
+ * search): a header button that is always visible toggles card-local open
+ * state; the body exists in the tree only while open.
+ */
+const cardStyle: CSSProperties = {
+  listStyle: 'none',
+  border: border(TOKENS.border),
+  borderRadius: 12,
+  background: '#fff',
+  transition: 'border-color 160ms, background 160ms',
+}
+
+const cardOpenStyle: CSSProperties = {
+  border: border(TOKENS.borderStrong),
+}
+
+const headerStyle: CSSProperties = {
+  width: '100%',
+  appearance: 'none',
+  border: 'none',
+  background: 'none',
+  font: 'inherit',
+  color: 'inherit',
+  textAlign: 'left',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  padding: '14px 16px',
+  borderRadius: 12,
+}
+
+const headTextStyle: CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
+}
+
+const headNameStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  flexWrap: 'wrap',
+  fontSize: 15,
+  fontWeight: 600,
+  lineHeight: 1.4,
+  color: TOKENS.text,
+}
+
+const headDescriptionStyle: CSSProperties = {
+  fontSize: TOKENS.fontUi,
+  lineHeight: 1.5,
+  color: TOKENS.textMuted,
+}
+
+const bodyStyle: CSSProperties = {
+  borderTop: border(TOKENS.border),
+  margin: '0 16px',
+  padding: '12px 0 8px',
+}
+
+/** Simple inline chevron (no icon-package import; the client bundle is pure). */
+function Chevron(props: { open: boolean }) {
+  return (
+    <svg
+      width={14}
+      height={14}
+      viewBox='0 0 16 16'
+      fill='none'
+      stroke={TOKENS.textMuted}
+      strokeWidth={1.6}
+      strokeLinecap='round'
+      strokeLinejoin='round'
+      style={{ flex: 'none', transition: 'transform 160ms', transform: props.open ? 'rotate(180deg)' : 'none' }}
+      aria-hidden='true'
+    >
+      <path d='M3 6l5 5 5-5' />
+    </svg>
+  )
+}
+
+/**
  * Render the compact-handoff card.
  * @param props - the card snapshot and its form actions.
  * @returns the card, or nothing when the namespace is unavailable.
@@ -377,26 +461,63 @@ export function CompactConfigCard(props: CompactConfigCardProps) {
   const state = props.useCard(snapshot => snapshot)
   if (!state.available) return null
   const face = props as unknown as CompactConfigCardFace
+  const [open, setOpen] = useState(false)
   const disabled = !state.writable
   const blocked = !state.dirty || state.invalid || state.saving
   const sectionReset = (section: string) => () => { face.resetField(section) }
-  return (
-    <li style={{ listStyle: 'none', padding: 0 }}>
-      <div style={{ border: border(TOKENS.border), borderRadius: 10, padding: 16, background: '#fff' }}>
 
-        {/* header: title + live status pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-          <span style={{ fontWeight: 600, fontSize: 14, color: TOKENS.text }}>Handoff auto-compact</span>
-          <span style={pillStyle(state.invalid, 'danger')} aria-live='polite'>invalid edits</span>
-          <span style={pillStyle(!state.invalid && state.saving, 'accent')}>saving...</span>
-          <span style={pillStyle(!state.invalid && !state.saving && state.dirty, 'accent')}>unsaved edits</span>
-          <span style={pillStyle(!state.invalid && !state.saving && !state.dirty && state.failed, 'danger')}>last save failed</span>
-        </div>
-        <p style={{ ...hintStyle, margin: '2px 0 0' }}>
-          Edits are staged and apply to handoff-config.json on save; external file edits
-          are adopted here. <span style={{ color: TOKENS.accent }}>*</span> marks a value
-          this layer overrides.
-        </p>
+  // Header pills follow the built-in cards: collapsed cards still show what
+  // matters (unsaved edits / a failure), like the "unsaved" disclosure mark.
+  const headerPill = state.invalid
+    ? { tone: 'danger' as const, label: 'invalid edits' }
+    : state.saving
+      ? { tone: 'accent' as const, label: 'saving...' }
+      : state.dirty
+        ? { tone: 'accent' as const, label: 'unsaved edits' }
+        : state.failed
+          ? { tone: 'danger' as const, label: 'last save failed' }
+          : null
+
+  return (
+    <li style={open ? { ...cardStyle, ...cardOpenStyle } : cardStyle}>
+      <button
+        type='button'
+        style={headerStyle}
+        aria-expanded={open}
+        aria-label={(open ? 'Collapse' : 'Expand') + ': Handoff auto-compact'}
+        onClick={() => { setOpen(!open) }}
+      >
+        <span style={headTextStyle}>
+          <span style={headNameStyle}>
+            Handoff auto-compact
+            {headerPill !== null
+              ? (
+                  <span
+                    style={{
+                      ...pillStyle(true, headerPill.tone),
+                      fontSize: 11,
+                      padding: '1px 8px',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >{headerPill.label}</span>
+                )
+              : null}
+          </span>
+          <span style={headDescriptionStyle} title={'Edits are staged and apply to handoff-config.json on save; external file edits are adopted here. * marks a value this layer overrides.'}>
+            Staged auto-compact triggers, retention, archiving, and per-model presets
+          </span>
+        </span>
+        <Chevron open={open} />
+      </button>
+      {open
+        ? (
+            <div style={bodyStyle}>
+
+              <p style={{ ...hintStyle, margin: '0 0 4px' }}>
+                Edits are staged and apply to handoff-config.json on save; external file edits
+                are adopted here. <span style={{ color: TOKENS.accent }}>*</span> marks a value
+                this layer overrides.
+              </p>
 
         {!state.writable ? (
           <p style={warnBannerStyle} role='status'>
@@ -710,7 +831,9 @@ export function CompactConfigCard(props: CompactConfigCardProps) {
               : null}
           </span>
         </div>
-      </div>
+            </div>
+          )
+        : null}
     </li>
   )
 }
