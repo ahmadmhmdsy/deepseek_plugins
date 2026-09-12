@@ -140,7 +140,14 @@ node --import tsx/esm apps/cli/src/bin.ts --profile web --patch 'D:/my_deepseek_
   never through junctions; `@deepseek-ai/*` imports only through the alias
   facade; config mutations always through the shared validator
   (`parseHandoffConfig`) + `atomicWriteJson`.
-- Keep dates machine-verifiable (git log, test output) rather than vague.
+- Keep dates machine-verifiable (git log, test output) rather than vague. For
+  live behavior, timestamped artifacts (archive/store file mtimes, archive
+  `index.md` lines, command output) are the evidence of record; a claim without
+  them or without a documented in-test source is not acceptable evidence.
+- Cheap-token test directive (user, 2026-09-12): when behavior needs a live
+  harness, isolate it (separate port + separate patch + separate store) and use
+  small token schedules so compactions happen quickly and cheaply. Live 3080
+  tests require explicit user approval for anything beyond read-only checks.
 
 ## 7) Keeping the map honest
 

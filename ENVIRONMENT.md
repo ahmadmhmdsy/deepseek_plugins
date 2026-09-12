@@ -62,11 +62,25 @@ DEV**; composition check exit 0 with all three plugin ids present.
 - `dsh-client-store` / `dsh-client-ui-renderer`: fork-only — the M3 client
   card must follow the RUN tree or become fork-only by user decision (Task 12).
 
+## Agent-session runtime facts (learned live 2026-09-12)
+
+These existed nowhere and cost real time to discover:
+
+- The agent session is hosted BY the 3080 harness process. Before any restart/stop of the web process, verify the owning PID (`Get-NetTCPConnection -LocalPort 3080 -State Listen`) against the user's explicit approval - killing it kills the agent mid-work.
+- `Get-ChildItem env:DSH_*` exposes hosting facts: `DSH_HOME`, `DSH_WEB_URL`, `DSH_SESSION_ID`, `DSH_SESSION_JSONL`, `DSH_SHELL`.
+- Compaction archives land in `{harness process cwd}\.dsh\handoffs\` - for 3080 that is `D:\deepseek_harness\deepseek-harness\.dsh\handoffs\`, NOT the plugin workspace. Checking an in-session archive dir is the cheapest proof any plugin suite is (or is NOT) running in an arbitrary harness.
+- Boot composition: a bare `dsh web` compiles bundle layers + the profile's OWN `cordis.patch.yml` (`$DSH_HOME\profiles\web\cordis.patch.yml`) + any `--patch` overlays (`apps/cli/src/profile-boot.ts`). "No --patch on the cmdline" does NOT mean "plugins not loaded" - read the profile patch and the live archives first.
+- Profile patch entries whose ids match existing loader entries MERGE config into them (`- id: X / config: {...}`); `insert:` with a duplicate id is a boot error. Client bundles must be reachable BY PACKAGE NAME from `$DSH_HOME\profiles\node_modules` (file-URL rows load the host half but silently suppress the client bundle).
+- Isolated-test recipe for harness features (cheap-token rule, user directive): test on a separate port with its own patch (`--port 3082 --patch .dsh-test/cordis.patch.test.yml`) pointing the plugin at an isolated store (`.dsh-test/handoff-config-test.json`). RPC wire format: `POST http://127.0.0.1:<port>/api/{method}` with body `{type:'client-request', rpcId:'rN', method, payload}` converted with JSON depth 8.
+- Timing: hot reloads and pre-step compactions are observable to ~1 s via file mtimes + archive index.md timestamps; machine-verifiable timestamps beat "happens after" narratives.
+
 ## Never do
 
 - Never kill or restart the running harness (it hosts this session's GUI);
   never boot long-lived servers from an agent session — GUI verification is a
-  user checkpoint.
+  user checkpoint. Identifying the harness PID and confirming it is not this
+  agent's host is a prerequisite of ANY process stop.
+- Never re-point junctions while a test run is active.
 - Never re-point junctions while a test run is active.
 - Never run bare `python`/GPU-era commands here — this is a TypeScript/Node
   workspace; any such instruction comes from a stale foreign document.

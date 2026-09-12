@@ -431,7 +431,17 @@ A task is complete only when:
 
 If these conditions are not met, keep the task `blocked` or report it as failed — never claim `done`.
 
-## 18. Final rule
+## 18. Debugging live harness behavior (repo-specific playbook)
+
+When investigating anything running inside the DSH harness (agent sessions, subagents, compaction, GUI edits), these steps precede code changes:
+
+1. Prove what is actually loaded before theorizing: check an in-session compaction archive directory under the harness cwd .dsh handoffs and the profile's own cordis.patch.yml - the boot flag and the actual boot composition are not the same thing (2026-09-12 misdiagnosis). Machine facts: ENVIRONMENT.md 'Agent-session runtime facts'.
+2. Isolate before touching live: separate port, own patch, own config store; keep the live store untouched. Cost rule (user directive): tiny-token schedules over live-system tests.
+3. Verify the session-host PID before stopping any process: the harness hosts the current agent session.
+4. Discriminate hypotheses with cheap timestamped experiments (archive and store mtimes, index.md lines), not restarts or expensive reruns.
+5. Record findings per the AGENTS.md standing rule - issue AND fix, with evidence and caveats - then commit.
+
+## 19. Final rule
 
 When implementation details are unspecified, preserve the user's intended outcome rather than mechanically following the literal wording of an intermediate instruction. If two interpretations produce materially different applications, ask one focused question.
 
