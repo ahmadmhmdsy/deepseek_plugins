@@ -17,6 +17,9 @@ import type { InjectFace, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type { CompactConfigCardFace, FieldView, ModelRowView } from './controller.ts'
 
+/** Shorthand style helper: a one-pixel solid border in the given color. */
+const border = (color: string): string => '1px solid ' + color
+
 /** Props the renderer binds for the compact-handoff card. */
 export type CompactConfigCardProps =
   PropsRuntime<'settings.plugin.item'>
