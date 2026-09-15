@@ -550,6 +550,30 @@ default hiding.
 - openView('editor') ordering caveat: chat links fall back to plain text while
   the view is unregistered.
 
+## 8g. FE-M-A Task 1 — DONE (2026-09-14, commit 364043f)
+
+- web-file-editor/ created: host half (identity stub; settings ns lands Task 2),
+  client half registering an 'Editor' tab into conversation.view (id 'editor',
+  order 15, label thunk), following the proven ui-trajectory pattern; placeholder
+  view; registration constants module; tsdown CJS loader-banner bundle
+  (3.03 kB, react external).
+- Type strategy (TEMPORARY, re-evaluate Task 2): the vendor chain behind
+  the conversation client module is NOT in the workspace tsconfig facade
+  (ui-session / api-session-controller absent on RUN); pulling it exploded the
+  typecheck into ~30 vendor errors, so the plugin ships a local ambient shim
+  (src/client/conversation-view.d.ts) augmenting the SlotMap row plus a local
+  ConvViewProps subset. Baseline fact discovered: the facade already carries
+  ~13 pre-existing tsc errors under both checkouts' tsc 6.0.3 (they surfaced
+  when the vendor chain was pulled). Our DELTA: zero new errors.
+- Wiring: patch row naming the PACKAGE (never a file URL) in the workspace
+  cordis.patch.yml AND profiles/web/cordis.patch.yml; delivery junction created
+  under profiles/node_modules (require.resolve verified); composition check
+  exit 0 with the row present.
+- Validation: vitest 106/106 (14 files) on RUN and on DEV; commit 364043f.
+- NEXT: user boots the harness (their checkpoint) and confirms the Editor tab;
+  then FE-M-A Task 2 = settings enable/disable + lazy-tree host fs service
+  + workbench replaces the placeholder.
+
 ## 9. File inventory (workspace)
 
 ```

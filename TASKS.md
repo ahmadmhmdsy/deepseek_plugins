@@ -8,7 +8,8 @@ owns the approved task definitions.
 
 ## File Editor plugin (Queued — direction approved 2026-09-14, plan: docs/superpowers/plans/2026-09-14-file-editor-plugin.md)
 
-- **FE-M-A — View-only Monaco editor tab** `pending` (user-gated start) — conversation.view slot (id 'editor'), workspace-scoped lazy tree, lazy Monaco chunk, split pane min-limits, chat click → editor, settings enable/disable.
+- **FE-M-A — View-only Monaco editor tab** in_progress —
+  - [x] FE-M-A Task 1 — tab path de-risk: conversation.view placeholder registered (id 'editor', order 15); bundle 3.03 kB; suite 106/106 (14 files) on RUN and DEV; tsc zero NEW errors (local slot shim; vendor-baseline noise documented in HANDOFF §8g); patch rows + profile delivery junction + composition check PASS — commit 364043f. **Live-GUI tab = user checkpoint (needs a harness boot of the web profile; never restart the running harness ourselves).**
 - **FE-M-B — Write support** `pending` — host fs service (allowlist'd workspace roots), save/dirty/conflict flow, create/rename/delete.
 - **FE-M-C — Drag-drop & reorganize** `pending` — DnD move, external import, workspace search. NOT forgotten — lives here and in the plan doc.
 Statuses: `pending` / `in_progress` / `blocked` / `done` (done = finished AND validated).
