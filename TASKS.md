@@ -91,7 +91,7 @@ plugin-kit so future plugins import/inherit instead of re-deriving.
 - **Task K2 — `_template-plugin/` copy-and-rename skeleton** `done`
 - **Task K3 — plugin-kit extraction** `in_progress` — user ordered early
   extraction (2026-09-13; the consumer-gating note is superseded by that
-  explicit call). K3-1 chrome `done` · K3-2 settings-form `pending` ·
+  explicit call). K3-1 chrome `done` · K3-2 settings-form `done` ·
   K3-3 host helpers `pending`.
 
 ## Backlog / parked (out-of-scope ideas; do not expand current tasks into these)

@@ -407,6 +407,21 @@ enable/disable the plugin from the gui".
   extraction (K3 gated on a real consumer). New front recorded in TASKS
   ("Plugin kit front"); AGENTS §1 map gains the best-practices rows when K1
   lands.
+- **Task K3-2 executed (2026-09-13, plan K3-2):** `plugin-kit/src/client/settings-form.ts`
+  extracted the controller's generic machinery: ParsedNumber + the three text
+  parsers + numToText/strToText/boolValue/deepEqual/fieldView, the generic
+  StagedSettingsForm class (staged sections+pendingClear, declarative boolean
+  controls, rows key; dirty definition; save orchestration with per-write
+  user-layer readback verification; discard; publish/bind + the base snapshot
+  store) and the vocabulary hook surface (acceptSectionEdit / acceptRowEdit /
+  parseSection / buildRows / seedMissingKeys / sectionViews / rowViews /
+  reshowRows / emptyRow). Kit src/client/store.ts is store.ts extracted
+  verbatim. The handoff controller is now a thin subclass over FormSpec
+  { sections(5), booleans auto+enabled (default true), rowsKey models } —
+  controller.ts 803 → 543 lines; controller.spec assertions unchanged.
+  Evidence: package tsc exit 0 (card + kit, RUN); vitest 104/104 (13 files)
+  BOTH on RUN and the DEV fork; tsdown rebuild 63.77 kB (gzip 13.16 kB),
+  purity gate green.
 - **Task K3-1 executed (user ordered early extraction 2026-09-13, plan K3-1):**
   `plugin-kit/` created (package.json + tsconfig facade; consumed by RELATIVE
   sibling imports, no new @deepseek-ai seams). `src/client/chrome.tsx` holds the
