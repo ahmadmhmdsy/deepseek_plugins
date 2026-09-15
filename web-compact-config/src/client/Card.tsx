@@ -453,6 +453,67 @@ function Chevron(props: { open: boolean }) {
 }
 
 /**
+ * Header enable/disable switch: a compact track-and-knob toggle for the
+ * plugin's master "enabled" value. It lives beside the disclosure button (a
+ * control must not be nested inside another button) and stages through the
+ * same form semantics as the Switches checkbox below.
+ */
+const headerRowStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  paddingRight: 4,
+}
+
+/** Small switch toggle (role="switch") built from inline styles only. */
+function Switch(props: {
+  checked: boolean
+  disabled: boolean
+  title: string
+  onToggle: (next: boolean) => void
+}) {
+  const track: CSSProperties = {
+    flex: 'none',
+    width: 34,
+    height: 20,
+    borderRadius: 999,
+    border: border(props.checked ? TOKENS.accent : TOKENS.borderStrong),
+    background: props.checked ? TOKENS.accent : TOKENS.disabledBackground,
+    position: 'relative',
+    cursor: props.disabled ? 'not-allowed' : 'pointer',
+    padding: 0,
+    appearance: 'none',
+    transition: 'background 160ms, border-color 160ms',
+    opacity: props.disabled ? 0.7 : 1,
+  }
+  const knob: CSSProperties = {
+    position: 'absolute',
+    top: 1,
+    left: props.checked ? 15 : 1,
+    width: 16,
+    height: 16,
+    borderRadius: 999,
+    background: '#fff',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+    transition: 'left 160ms',
+  }
+  return (
+    <button
+      type='button'
+      role='switch'
+      aria-checked={props.checked}
+      aria-label='Enable or disable the Handoff auto-compact plugin'
+      title={props.title}
+      disabled={props.disabled}
+      style={track}
+      onClick={() => { props.onToggle(!props.checked) }}
+    >
+      <span style={knob} />
+    </button>
+  )
+}
+
+/**
  * Render the compact-handoff card.
  * @param props - the card snapshot and its form actions.
  * @returns the card, or nothing when the namespace is unavailable.
@@ -480,6 +541,7 @@ export function CompactConfigCard(props: CompactConfigCardProps) {
 
   return (
     <li style={open ? { ...cardStyle, ...cardOpenStyle } : cardStyle}>
+      <div style={headerRowStyle}>
       <button
         type='button'
         style={headerStyle}
@@ -509,6 +571,13 @@ export function CompactConfigCard(props: CompactConfigCardProps) {
         </span>
         <Chevron open={open} />
       </button>
+        <Switch
+          checked={state.enabled.value}
+          disabled={disabled}
+          title='Master switch: enable or disable the Handoff auto-compact plugin. Staged - it lands in handoff-config.json on save.'
+          onToggle={next => { face.edit('enabled', next ? 'true' : 'false') }}
+        />
+      </div>
       {open
         ? (
             <div style={bodyStyle}>
