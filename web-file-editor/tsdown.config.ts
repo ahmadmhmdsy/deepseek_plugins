@@ -49,6 +49,12 @@ export default defineConfig({
   plugins: [{
     name: 'dsh-client-bundle-purity',
     resolveId(source: string) {
+      // Monaco's codicon/other stylesheets ride .css side-effect imports; the
+      // plugin handoff is JS-only (the loader never loads css chunks), so they
+      // become name-spaced empty modules instead of entering the css guard.
+      if (/\.[a-z][a-z]?ss$/i.test(source)) {
+        return { id: 'we-css-stub:' + source.replace(/[^./]+\.css$/i, 'dropped.css.js'), moduleSideEffects: false }
+      }
       if (!source.startsWith('@deepseek-ai/')) return null
       if (CLIENT_EXTERNALS.includes(source)) return null
       throw new Error(
@@ -57,9 +63,16 @@ export default defineConfig({
         + '(type-only imports are erased and never reach this gate)',
       )
     },
+    load(id: string) {
+      if (!id.startsWith('we-css-stub:')) return null
+      return '/* monaco stylesheet dropped: the plugin handoff ships styles only via <style> tags */'
+    },
   }],
   outputOptions: {
     entryFileNames: 'client.js',
+    // The handoff is ONE CJS file; monaco's per-language dynamic imports must
+    // not become detached chunk files the loader's require cannot resolve.
+    inlineDynamicImports: true,
     banner: 'window.__ModuleLoader__.load({ id: ' + JSON.stringify(ID) + ', factory: (require) => {',
     footer: 'return module.exports; } });',
     intro: 'var module = { exports: {} }; var exports = module.exports;',

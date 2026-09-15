@@ -81,6 +81,7 @@ const NPM_DEPS = [
   { name: 'react', from: 'packages/client/ui-settings-plugins' },
   { name: '@types/react', from: 'packages/client/ui-settings-plugins' },
   { name: '@types/node', from: '' },
+  { name: 'monaco-editor', from: '' },
 ]
 
 /** Root dev tools used directly from this workspace. */

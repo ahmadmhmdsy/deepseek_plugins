@@ -1,6 +1,8 @@
 /**
- * FE-M-A Task 1 acceptance checks: registration constants and the delivered
- * client bundle contract (loader banner, package id, externals table shape).
+ * Registration constants and the delivered client bundle contract (loader
+ * banner, package id, platform-external shape). Since FE-M-A Task 4 the
+ * bundle inlines the Monaco engine, so the size cap (former stub check)
+ * became an LOWER-bound presence check plus the exact-sized engine marker.
  *
  * @module web-file-editor/tests
  */
@@ -28,9 +30,10 @@ describe('web-file-editor registration constants', () => {
     expect(source.includes('web-file-editor')).toBe(true)
     // externals: the platform module table provides react (inlined react would bloat)
     expect(source.includes('require("react/jsx-runtime")')).toBe(true)
-    expect(source.includes('var module = { exports: {} };') || source.includes('var module = {')).toBe(true)
-    // externals sanity: the stub bundle stays tiny
-    expect(source.length).toBeGreaterThan(500)
-    expect(source.length).toBeLessThan(20000)
+    expect(source.includes('var module = { exports: {} };')).toBe(true)
+    // the reader workbench: the monaco engine is inlined (no external require may remain)
+    expect(source.length).toBeGreaterThan(100000)
+    expect(source.includes('require("monaco-editor')).toBe(false)
+    expect(source.includes('MonacoEnvironment')).toBe(true)
   })
 })

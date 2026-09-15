@@ -10,7 +10,7 @@
  * @module web-file-editor/client/gating
  */
 import { VIEW_ID, VIEW_LABEL, VIEW_ORDER, VIEW_SLOT } from './registration.ts'
-import { EditorView, type EditorViewInjected } from './EditorView.tsx'
+import type { EditorViewInjected } from './EditorView.tsx'
 
 /** The settings face this gate reads (bound settingsScope store). */
 export interface EditorSettingsFace {
@@ -58,6 +58,7 @@ export function tabMountContext(
     register(options: Record<string, unknown>, component: unknown): () => void
   },
   injected: () => EditorViewInjected,
+  component: unknown, // kept untyped here: the view layer carries the heavy client deps
 ): TabMountHandler['mount'] {
   return () => {
     let d: (() => void) | undefined
@@ -67,7 +68,7 @@ export function tabMountContext(
       order: VIEW_ORDER,
       label: () => VIEW_LABEL,
       inject: injected as unknown as () => Record<string, never>,
-    }, EditorView) })
+    }, component) })
     return d ?? (() => { /* registration never completed */ })
   }
 }

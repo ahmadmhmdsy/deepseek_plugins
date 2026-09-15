@@ -18,9 +18,11 @@ import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { NS } from '../ns.ts'
 import { connectTabGate, tabMountContext } from './gating.ts'
 import { faceForRemote, fileEditorFsContribution } from './fs-remote.ts'
+import { EditorView } from './EditorView.tsx'
 
 export { VIEW_ID, VIEW_LABEL, VIEW_ORDER, VIEW_SLOT } from './registration.ts'
 export { EditorView, type EditorViewInjected, type WorkspaceRowFace } from './EditorView.tsx'
+export { createReadonlyWorkbench, languageForPath, type WorkbenchHandle } from './workbench.ts'
 export { connectTabGate, type EditorSettingsFace } from './gating.ts'
 export { faceForRemote, fileEditorFsContribution, FS_NAMESPACE, FS_SERVICE_KEY } from './fs-remote.ts'
 
@@ -79,7 +81,7 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => connectTabGate({
     getSnapshot: () => scope.getSnapshot() as { enabled?: boolean },
     subscribe: (listener) => scope.subscribe(listener),
-  }, tabMountContext((editor as unknown as Record<string, unknown>).slots as never as Parameters<typeof tabMountContext>[0], injected)), 'web-file-editor: gated Editor tab')
+  }, tabMountContext((editor as unknown as Record<string, unknown>).slots as never as Parameters<typeof tabMountContext>[0], injected, EditorView)), 'web-file-editor: gated Editor tab')
 }
 
 function workspacesRows(editor: EditorClientContext): readonly { workspaceId: string; title: string; path: string }[] {

@@ -11,9 +11,10 @@
  *
  * @module web-file-editor/client/EditorView
  */
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { EditorFsFace, FsEntryWire, FsReadResult } from './fs-remote.ts'
+import { createReadonlyWorkbench, languageForPath, type WorkbenchHandle } from './workbench.ts'
 
 /** Injection face the tab registration passes per mount. */
 export interface EditorViewInjected {
@@ -160,12 +161,39 @@ export function EditorView(props: ConvViewProps & Partial<EditorViewInjected>): 
         {file !== undefined && file.state.loading && <p style={hintStyle}>Loading {file.relPath}...</p>}
         {file !== undefined && file.state.error !== undefined && <p style={errorStyle}>{file.state.error}</p>}
         {file !== undefined && file.state.read !== undefined && (
-          <div>
-            <p style={hintStyle}>{file.state.read.relPath} ({String(file.state.read.size)} bytes)</p>
-            <pre style={preStyle}>{file.state.read.content}</pre>
-          </div>
+          <ContentPane
+            key={file.state.read.relPath}
+            relPath={file.state.read.relPath}
+            size={file.state.read.size}
+            content={file.state.read.content}
+          />
         )}
       </div>
+    </div>
+  )
+}
+
+/** The Monaco pane for one read file: lazily instantiated on first open. */
+function ContentPane(props: { relPath: string; size: number; content: string }): JSX.Element {
+  const hostRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const host = hostRef.current
+    if (host === null) return undefined
+    let handle: WorkbenchHandle | undefined
+    try {
+      handle = createReadonlyWorkbench(host)
+      handle.set(props.content, languageForPath(props.relPath))
+    } catch (error) {
+      host.textContent = props.content
+      host.setAttribute('data-editor-fallback', '1')
+      host.setAttribute('data-editor-fallback-reason', String(error))
+    }
+    return () => { handle?.dispose() }
+  }, [props.relPath, props.content])
+  return (
+    <div>
+      <p style={hintStyle}>{props.relPath} ({String(props.size)} bytes)</p>
+      <div ref={hostRef} style={{ height: 'calc(100% - 24px)', minHeight: 240 }} />
     </div>
   )
 }
