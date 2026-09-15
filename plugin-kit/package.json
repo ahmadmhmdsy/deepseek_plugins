@@ -1,0 +1,9 @@
+{
+  "name": "plugin-kit",
+  "description": "Shared source modules for the deepseek_plugins suite: client card chrome, settings-form machinery, host helpers (always import by relative path from a sibling package)",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": { ".": "./src/index.ts", "./src/*": "./src/*" }
+}

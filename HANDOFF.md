@@ -407,6 +407,24 @@ enable/disable the plugin from the gui".
   extraction (K3 gated on a real consumer). New front recorded in TASKS
   ("Plugin kit front"); AGENTS §1 map gains the best-practices rows when K1
   lands.
+- **Task K3-1 executed (user ordered early extraction 2026-09-13, plan K3-1):**
+  `plugin-kit/` created (package.json + tsconfig facade; consumed by RELATIVE
+  sibling imports, no new @deepseek-ai seams). `src/client/chrome.tsx` holds the
+  card chrome moved verbatim from web-compact-config/src/client/Card.tsx:
+  TOKENS + all shared style constants, Overridden/Field/Select/Checkbox
+  widgets, card/header/body chrome, Chevron, the role="switch" Switch (its
+  aria-label de-fused from the title via a separate `label` prop to preserve
+  the handoff card's old accessible name), the priority-ordered
+  `deriveHeaderPill`, and the new generic `PluginCardShell` (owns disclosure
+  open state; head-controls provided as SIBLING props, not nested in the
+  button). Card.tsx is now vocabulary-only (Row + sections + footer; 908 → 480
+  lines) and renders via PluginCardShell. New `plugin-kit/tests/chrome.spec.ts`
+  pins the pill-priority behavior (5 tests). vitest include extended.
+  Evidence: package tsc exit 0 (card + kit, RUN); vitest 104/104 (13 files)
+  BOTH on RUN and on the DEV fork (link script round-trip); --dump-config exit
+  0 with all rows present; tsdown rebuild 61.15 kB (gzip 12.19 kB), purity
+  gate green (kit files inline). LIVE GUI CHECKPOINT (user, as ever): hard
+  reload to defeat ?rev staleness before judging the card visually.
 - **Task K2 executed (user request 2026-09-13, plugin-kit plan K2):**
   `_template-plugin/` copy-and-rename skeleton created (spec 2026-09-13 §5):
   package.json (name TODO-PLUGIN), tsconfig.json (extends the workspace

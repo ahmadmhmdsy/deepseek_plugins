@@ -147,6 +147,7 @@ export default defineConfig({
       'compact-config-command/tests/**/*.spec.ts',
       'web-compact-config/tests/**/*.spec.ts',
       '_template-plugin/tests/**/*.spec.ts',
+      'plugin-kit/tests/**/*.spec.ts',
     ],
   },
 })

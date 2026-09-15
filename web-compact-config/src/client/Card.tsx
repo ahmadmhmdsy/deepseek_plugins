@@ -5,284 +5,28 @@
  * CSS pipeline); plain-English labels (i18n deferred). Renders nothing while
  * the Host does not serve the namespace.
  *
- * Visual design (impeccable pass): design tokens for color/type/spacing;
- * header with live status pills; grouped sections with uppercase captions;
- * focus rings + aria attributes on inputs; banner-style errors and notices;
- * separated action footer with primary Save and ghost Discard.
+ * Visual chrome (tokens, head, pills, chevron, switch, banners, shared field
+ * widgets) lives in plugin-kit chrome — extracted without behavior change
+ * (plugin-kit plan K3-1); this file keeps only the handoff vocabulary:
+ * state wiring, vocabulary sections, model rows, and the action footer.
  *
  * @module web-compact-config/client/Card
  */
-import { useState, type CSSProperties } from 'react'
+
+import { useState } from 'react'
 import type { InjectFace, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type { CompactConfigCardFace, FieldView, ModelRowView } from './controller.ts'
-
-/** Shorthand style helper: a one-pixel solid border in the given color. */
-const border = (color: string): string => '1px solid ' + color
+import { Checkbox, Field, PluginCardShell, border, buttonBaseStyle, captionStyle, dangerGhostStyle, errorStyle, ghostButtonStyle, deriveHeaderPill, hintStyle, inputStyle, labelStyle, rowStyle, sectionStyle, Select, TOKENS, warnBannerStyle } from '../../../plugin-kit/src/client/chrome.tsx'
 
 /** Props the renderer binds for the compact-handoff card. */
 export type CompactConfigCardProps =
   PropsRuntime<'settings.plugin.item'>
   & InjectFace<CompactConfigCardFace>
 
-// ---- design tokens ----
-
-const TOKENS = {
-  text: '#1f2328',
-  textMuted: '#8b9199',
-  accent: '#3b6ef6',
-  accentSoft: 'rgba(59, 110, 246, 0.14)',
-  danger: '#c02b33',
-  dangerSoft: 'rgba(192, 43, 51, 0.08)',
-  warn: '#8a6100',
-  warnSoft: 'rgba(200, 150, 10, 0.12)',
-  border: '#e2e4e8',
-  borderStrong: '#c9ccd2',
-  inputBorder: '#d2d5da',
-  inputBackground: '#ffffff',
-  disabledBackground: '#f5f6f8',
-  radius: 6,
-  fontUi: 13,
-  fontSmall: 12,
-  fontCaption: 11,
-} as const
-
-const labelStyle: CSSProperties = {
-  display: 'block',
-  fontSize: TOKENS.fontSmall,
-  color: TOKENS.textMuted,
-  marginBottom: 3,
-  letterSpacing: 0.2,
-}
-
-const inputStyle: CSSProperties = {
-  width: 160,
-  boxSizing: 'border-box',
-  padding: '5px 8px',
-  fontSize: TOKENS.fontUi,
-  color: TOKENS.text,
-  border: border(TOKENS.inputBorder),
-  borderRadius: TOKENS.radius,
-  background: TOKENS.inputBackground,
-  transition: 'border-color 120ms ease, box-shadow 120ms ease',
-  outline: 'none',
-}
-
-const invalidInputStyle: CSSProperties = {
-  ...inputStyle,
-  borderColor: TOKENS.danger,
-  background: TOKENS.dangerSoft,
-}
-
-const disabledInputStyle: CSSProperties = {
-  ...inputStyle,
-  background: TOKENS.disabledBackground,
-  cursor: 'not-allowed',
-  opacity: 0.7,
-}
-
-const sectionStyle: CSSProperties = {
-  padding: '14px 0',
-  borderTop: border(TOKENS.border),
-}
-
-const rowStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'flex-end',
-  gap: 10,
-  flexWrap: 'wrap',
-  marginBottom: 2,
-}
-
-const captionStyle: CSSProperties = {
-  fontSize: TOKENS.fontCaption,
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  letterSpacing: 0.8,
-  color: TOKENS.textMuted,
-  marginBottom: 8,
-}
-
-const buttonBaseStyle: CSSProperties = {
-  padding: '5px 14px',
-  fontSize: TOKENS.fontUi,
-  borderRadius: TOKENS.radius,
-  border: border(TOKENS.borderStrong),
-  background: '#ffffff',
-  color: TOKENS.text,
-  cursor: 'pointer',
-  transition: 'background 120ms ease, border-color 120ms ease',
-}
-
-const ghostButtonStyle: CSSProperties = {
-  ...buttonBaseStyle,
-  padding: '4px 10px',
-  fontSize: TOKENS.fontSmall,
-  borderColor: 'transparent',
-  background: 'transparent',
-}
-
-const dangerGhostStyle: CSSProperties = {
-  ...ghostButtonStyle,
-  color: TOKENS.danger,
-}
-
-const hintStyle: CSSProperties = {
-  fontSize: TOKENS.fontSmall,
-  color: TOKENS.textMuted,
-  lineHeight: 1.45,
-}
-
-const errorStyle: CSSProperties = {
-  fontSize: TOKENS.fontSmall,
-  color: TOKENS.danger,
-  background: TOKENS.dangerSoft,
-  border: border(TOKENS.danger),
-  borderRadius: TOKENS.radius,
-  padding: '7px 10px',
-  margin: '10px 0',
-  lineHeight: 1.45,
-}
-
-const warnBannerStyle: CSSProperties = {
-  fontSize: TOKENS.fontSmall,
-  color: TOKENS.warn,
-  background: TOKENS.warnSoft,
-  border: border(TOKENS.warn),
-  borderRadius: TOKENS.radius,
-  padding: '7px 10px',
-  margin: '10px 0',
-  lineHeight: 1.45,
-}
-
-const PILL_TONES = {
-  neutral: { color: TOKENS.textMuted, background: TOKENS.disabledBackground },
-  accent: { color: TOKENS.accent, background: TOKENS.accentSoft },
-  danger: { color: TOKENS.danger, background: TOKENS.dangerSoft },
-} as const
-
-function pillStyle(active: boolean, tone: 'neutral' | 'accent' | 'danger'): CSSProperties {
-  return {
-    display: 'inline-block',
-    fontSize: TOKENS.fontCaption,
-    fontWeight: 600,
-    padding: '2px 9px',
-    borderRadius: 999,
-    ...PILL_TONES[tone],
-    opacity: active ? 1 : 0,
-  }
-}
-
-/** Overridden mark: accent asterisk, explained on hover. */
-function Overridden() {
-  return (
-    <span
-      title='A value customized by this settings layer. Use reset to let it re-inherit the default.'
-      style={{ color: TOKENS.accent, cursor: 'help', marginLeft: 2 }}
-      aria-label='overridden value'
-    >
-      *
-    </span>
-  )
-}
-
-function Field(props: {
-  label: string
-  view: FieldView
-  disabled: boolean
-  onEdit: (text: string) => void
-  onReset?: (() => void) | undefined
-  width?: number | undefined
-  numeric?: boolean | undefined
-}) {
-  const base = props.disabled ? disabledInputStyle : inputStyle
-  const style = props.width === undefined ? base : { ...base, width: props.width }
-  const shown = props.view.invalid ? { ...style, ...invalidInputStyle } : style
-  return (
-    <span>
-      <span style={labelStyle}>
-        {props.label}
-        {props.view.overridden ? <Overridden /> : null}
-      </span>
-      <input
-        type='text'
-        inputMode={props.numeric === true ? 'decimal' : 'text'}
-        value={props.view.text}
-        disabled={props.disabled}
-        aria-invalid={props.view.invalid}
-        style={shown}
-        onChange={event => { props.onEdit(event.target.value) }}
-      />
-      {props.onReset !== undefined
-        ? (
-            <button
-              type='button'
-              style={{ ...ghostButtonStyle, marginLeft: 2 }}
-              disabled={props.disabled}
-              onClick={props.onReset}
-              title='Clear this section override so it re-inherits the default'
-            >
-              reset
-            </button>
-          )
-        : null}
-    </span>
-  )
-}
-
-function Select(props: {
-  label: string
-  value: string
-  options: readonly string[]
-  disabled: boolean
-  overridden: boolean
-  onEdit: (text: string) => void
-}) {
-  return (
-    <span>
-      <span style={labelStyle}>
-        {props.label}
-        {props.overridden ? <Overridden /> : null}
-      </span>
-      <select
-        value={props.value}
-        disabled={props.disabled}
-        style={{ ...inputStyle, cursor: props.disabled ? 'not-allowed' : 'pointer' }}
-        onChange={event => { props.onEdit(event.target.value) }}
-      >
-        {props.options.map(option => (
-          <option key={option} value={option}>{option}</option>
-        ))}
-      </select>
-    </span>
-  )
-}
-
-function Checkbox(props: {
-  label: string
-  checked: boolean
-  disabled: boolean
-  overridden: boolean
-  onEdit: (text: string) => void
-}) {
-  return (
-    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: TOKENS.fontUi, padding: '5px 0', cursor: props.disabled ? 'not-allowed' : 'pointer' }}>
-      <input
-        type='checkbox'
-        checked={props.checked}
-        disabled={props.disabled}
-        onChange={event => { props.onEdit(event.target.checked ? 'true' : 'false') }}
-      />
-      <span>
-        {props.label}
-        {props.overridden ? <Overridden /> : null}
-      </span>
-    </label>
-  )
-}
-
+/** One model-preset row: the handoff vocabulary over the kit field widgets. */
 function Row(props: { index: number; row: ModelRowView; disabled: boolean; face: CompactConfigCardFace }) {
-  const { face } = props
+  const face = props.face
   const edit = (field: string) => (text: string) => { face.editRow(props.index, field, text) }
   return (
     <div
@@ -330,8 +74,22 @@ function Row(props: { index: number; row: ModelRowView; disabled: boolean; face:
         overridden={false}
         onEdit={edit('mode')}
       />
-      <Field label='ratio (0-1]' view={props.row.ratio} disabled={props.disabled} onEdit={edit('ratio')} width={70} numeric />
-      <Field label='tokens' view={props.row.tokens} disabled={props.disabled} onEdit={edit('tokens')} width={90} numeric />
+      <Field
+        label='ratio (0-1]'
+        view={props.row.ratio}
+        disabled={props.disabled}
+        onEdit={edit('ratio')}
+        width={70}
+        numeric
+      />
+      <Field
+        label='tokens'
+        view={props.row.tokens}
+        disabled={props.disabled}
+        onEdit={edit('tokens')}
+        width={90}
+        numeric
+      />
       <Select
         label='retain'
         value={props.row.retainKind}
@@ -367,152 +125,6 @@ function Row(props: { index: number; row: ModelRowView; disabled: boolean; face:
     </div>
   )
 }
-
-/**
- * Card disclosure chrome, mirroring the built-in plugin cards (shell, web
- * search): a header button that is always visible toggles card-local open
- * state; the body exists in the tree only while open.
- */
-const cardStyle: CSSProperties = {
-  listStyle: 'none',
-  border: border(TOKENS.border),
-  borderRadius: 12,
-  background: '#fff',
-  transition: 'border-color 160ms, background 160ms',
-}
-
-const cardOpenStyle: CSSProperties = {
-  border: border(TOKENS.borderStrong),
-}
-
-const headerStyle: CSSProperties = {
-  width: '100%',
-  appearance: 'none',
-  border: 'none',
-  background: 'none',
-  font: 'inherit',
-  color: 'inherit',
-  textAlign: 'left',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  gap: 12,
-  padding: '14px 16px',
-  borderRadius: 12,
-}
-
-const headTextStyle: CSSProperties = {
-  flex: 1,
-  minWidth: 0,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 4,
-}
-
-const headNameStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 8,
-  flexWrap: 'wrap',
-  fontSize: 15,
-  fontWeight: 600,
-  lineHeight: 1.4,
-  color: TOKENS.text,
-}
-
-const headDescriptionStyle: CSSProperties = {
-  fontSize: TOKENS.fontUi,
-  lineHeight: 1.5,
-  color: TOKENS.textMuted,
-}
-
-const bodyStyle: CSSProperties = {
-  borderTop: border(TOKENS.border),
-  margin: '0 16px',
-  padding: '12px 0 8px',
-}
-
-/** Simple inline chevron (no icon-package import; the client bundle is pure). */
-function Chevron(props: { open: boolean }) {
-  return (
-    <svg
-      width={14}
-      height={14}
-      viewBox='0 0 16 16'
-      fill='none'
-      stroke={TOKENS.textMuted}
-      strokeWidth={1.6}
-      strokeLinecap='round'
-      strokeLinejoin='round'
-      style={{ flex: 'none', transition: 'transform 160ms', transform: props.open ? 'rotate(180deg)' : 'none' }}
-      aria-hidden='true'
-    >
-      <path d='M3 6l5 5 5-5' />
-    </svg>
-  )
-}
-
-/**
- * Header enable/disable switch: a compact track-and-knob toggle for the
- * plugin's master "enabled" value. It lives beside the disclosure button (a
- * control must not be nested inside another button) and stages through the
- * same form semantics as the Switches checkbox below.
- */
-const headerRowStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  paddingRight: 4,
-}
-
-/** Small switch toggle (role="switch") built from inline styles only. */
-function Switch(props: {
-  checked: boolean
-  disabled: boolean
-  title: string
-  onToggle: (next: boolean) => void
-}) {
-  const track: CSSProperties = {
-    flex: 'none',
-    width: 34,
-    height: 20,
-    borderRadius: 999,
-    border: border(props.checked ? TOKENS.accent : TOKENS.borderStrong),
-    background: props.checked ? TOKENS.accent : TOKENS.disabledBackground,
-    position: 'relative',
-    cursor: props.disabled ? 'not-allowed' : 'pointer',
-    padding: 0,
-    appearance: 'none',
-    transition: 'background 160ms, border-color 160ms',
-    opacity: props.disabled ? 0.7 : 1,
-  }
-  const knob: CSSProperties = {
-    position: 'absolute',
-    top: 1,
-    left: props.checked ? 15 : 1,
-    width: 16,
-    height: 16,
-    borderRadius: 999,
-    background: '#fff',
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
-    transition: 'left 160ms',
-  }
-  return (
-    <button
-      type='button'
-      role='switch'
-      aria-checked={props.checked}
-      aria-label='Enable or disable the Handoff auto-compact plugin'
-      title={props.title}
-      disabled={props.disabled}
-      style={track}
-      onClick={() => { props.onToggle(!props.checked) }}
-    >
-      <span style={knob} />
-    </button>
-  )
-}
-
 /**
  * Render the compact-handoff card.
  * @param props - the card snapshot and its form actions.
@@ -522,67 +134,28 @@ export function CompactConfigCard(props: CompactConfigCardProps) {
   const state = props.useCard(snapshot => snapshot)
   if (!state.available) return null
   const face = props as unknown as CompactConfigCardFace
-  const [open, setOpen] = useState(false)
   const disabled = !state.writable
   const blocked = !state.dirty || state.invalid || state.saving
   const sectionReset = (section: string) => () => { face.resetField(section) }
 
   // Header pills follow the built-in cards: collapsed cards still show what
   // matters (unsaved edits / a failure), like the "unsaved" disclosure mark.
-  const headerPill = state.invalid
-    ? { tone: 'danger' as const, label: 'invalid edits' }
-    : state.saving
-      ? { tone: 'accent' as const, label: 'saving...' }
-      : state.dirty
-        ? { tone: 'accent' as const, label: 'unsaved edits' }
-        : state.failed
-          ? { tone: 'danger' as const, label: 'last save failed' }
-          : null
+  const headerPill = deriveHeaderPill(state)
 
   return (
-    <li style={open ? { ...cardStyle, ...cardOpenStyle } : cardStyle}>
-      <div style={headerRowStyle}>
-      <button
-        type='button'
-        style={headerStyle}
-        aria-expanded={open}
-        aria-label={(open ? 'Collapse' : 'Expand') + ': Handoff auto-compact'}
-        onClick={() => { setOpen(!open) }}
-      >
-        <span style={headTextStyle}>
-          <span style={headNameStyle}>
-            Handoff auto-compact
-            {headerPill !== null
-              ? (
-                  <span
-                    style={{
-                      ...pillStyle(true, headerPill.tone),
-                      fontSize: 11,
-                      padding: '1px 8px',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >{headerPill.label}</span>
-                )
-              : null}
-          </span>
-          <span style={headDescriptionStyle} title={'Edits are staged and apply to handoff-config.json on save; external file edits are adopted here. * marks a value this layer overrides.'}>
-            Staged auto-compact triggers, retention, archiving, and per-model presets
-          </span>
-        </span>
-        <Chevron open={open} />
-      </button>
-        <Switch
-          checked={state.enabled.value}
-          disabled={disabled}
-          title='Master switch: enable or disable the Handoff auto-compact plugin. Staged - it lands in handoff-config.json on save.'
-          onToggle={next => { face.edit('enabled', next ? 'true' : 'false') }}
-        />
-      </div>
-      {open
-        ? (
-            <div style={bodyStyle}>
-
-              <p style={{ ...hintStyle, margin: '0 0 4px' }}>
+    <PluginCardShell
+      title='Handoff auto-compact'
+      pill={headerPill}
+      description='Staged auto-compact triggers, retention, archiving, and per-model presets'
+      descriptionTitle={'Edits are staged and apply to handoff-config.json on save; external file edits are adopted here. * marks a value this layer overrides.'}
+      disclosureLabel='Handoff auto-compact'
+      switchChecked={state.enabled.value}
+      switchDisabled={disabled}
+      switchTitle='Master switch: enable or disable the Handoff auto-compact plugin. Staged - it lands in handoff-config.json on save.'
+      switchLabel='Enable or disable the Handoff auto-compact plugin'
+      onSwitchToggle={next => { face.edit('enabled', next ? 'true' : 'false') }}
+      body={<>
+      <p style={{ ...hintStyle, margin: '0 0 4px' }}>
                 Edits are staged and apply to handoff-config.json on save; external file edits
                 are adopted here. <span style={{ color: TOKENS.accent }}>*</span> marks a value
                 this layer overrides.
@@ -900,9 +473,8 @@ export function CompactConfigCard(props: CompactConfigCardProps) {
               : null}
           </span>
         </div>
-            </div>
-          )
-        : null}
-    </li>
+
+      </>}
+    />
   )
 }

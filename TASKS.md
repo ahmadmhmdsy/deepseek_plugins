@@ -89,9 +89,10 @@ plugin-kit so future plugins import/inherit instead of re-deriving.
 - **Task K1 — best-practices docs** `done` (3 guides: source plugin, client
   card, claim-done checklist)
 - **Task K2 — `_template-plugin/` copy-and-rename skeleton** `done`
-- **Task K3 — plugin-kit extraction (K3-1 chrome, K3-2 settings-form, K3-3 host
-  helpers)** `pending` — **USER-GATED / consumer-gated**: runs against the next
-  real plugin that needs it, unless the user explicitly orders early extraction.
+- **Task K3 — plugin-kit extraction** `in_progress` — user ordered early
+  extraction (2026-09-13; the consumer-gating note is superseded by that
+  explicit call). K3-1 chrome `done` · K3-2 settings-form `pending` ·
+  K3-3 host helpers `pending`.
 
 ## Backlog / parked (out-of-scope ideas; do not expand current tasks into these)
 
