@@ -56,6 +56,7 @@ deepseek_plugins/
 ├─ compact-config-command/  M2 /compact-config command (DONE): src/{index,parse}.ts + tests/
 ├─ web-compact-config/      M3 settings card + host bridge (TODO — create in Tasks 11-12)
 ├─ probe-dsh-resolution/    keep — module-resolution regression probe (cordis.yml + hello.ts + probe.ts)
+├─ _template-plugin/        copy-and-rename skeleton for a new host-side plugin (Task K2; not mounted — leading underscore = not a real plugin)
 ├─ scripts/
 │  ├─ link-node-modules.mjs  junction builder (target-aware; arg > DSH_TARGET env > RUN > sibling fork)
 │  └─ .dsh-target.txt        recorded target checkout (gitignored — machine-local)

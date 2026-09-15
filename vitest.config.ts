@@ -146,6 +146,7 @@ export default defineConfig({
       'compaction-handoff/tests/**/*.spec.ts',
       'compact-config-command/tests/**/*.spec.ts',
       'web-compact-config/tests/**/*.spec.ts',
+      '_template-plugin/tests/**/*.spec.ts',
     ],
   },
 })

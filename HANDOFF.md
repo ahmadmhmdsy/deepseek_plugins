@@ -407,6 +407,18 @@ enable/disable the plugin from the gui".
   extraction (K3 gated on a real consumer). New front recorded in TASKS
   ("Plugin kit front"); AGENTS §1 map gains the best-practices rows when K1
   lands.
+- **Task K2 executed (user request 2026-09-13, plugin-kit plan K2):**
+  `_template-plugin/` copy-and-rename skeleton created (spec 2026-09-13 §5):
+  package.json (name TODO-PLUGIN), tsconfig.json (extends the workspace
+  facade), src/index.ts (documented command-plugin entry: name/inject/apply +
+  ctx.effect lifecycle registration), src/parse.ts (pure grammar example —
+  closed union incl. 'usage'), tests/parse.spec.ts (4 tests), README.md
+  (copy protocol: rename markers → edit logic keeping the contract → patch
+  wiring (file:// URL rule) → checklist → docs chain). NOT mounted in
+  composition (leading underscore = not a real plugin); vitest include list
+  extended so its tests run in the suite. Evidence: vitest 99/99 (12 files)
+  on RUN; template tsc --noEmit exit 0 (target checkout tsc bin); 21
+  TODO-PLUGIN markers distributed across the six files for the rename sweep.
 - **Task K1 executed (user request 2026-09-13, plugin-kit plan K1-1..K1-3):**
   `docs/best-practices/` created with the three guides from spec §4:
   `creating-a-source-plugin.md` (package anatomy, cordis entry, store+shared
