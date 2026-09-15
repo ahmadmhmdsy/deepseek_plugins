@@ -407,6 +407,18 @@ enable/disable the plugin from the gui".
   extraction (K3 gated on a real consumer). New front recorded in TASKS
   ("Plugin kit front"); AGENTS §1 map gains the best-practices rows when K1
   lands.
+- **Plugin-creation loop wired into the map (user request 2026-09-13):** AGENTS
+  §1 now carries not only the best-practices / kit / kit-spec rows (updated
+  triggers: "update in the same task that proved it, or record the pending
+  update in TASKS") but a new explicit **§1a "The plugin-creation loop
+  (mandatory for ANY new plugin)"**: read the guides + kit spec/plan +
+  MEMORY mechanics, start from _template-plugin, prefer kit imports over
+  duplication (copy-and-own until ≥2 proven users, then extract per the K3
+  pattern), and a standing FEED-BACK obligation — guides/template/kit updated
+  by every new plugin's experience in the task that proved it (or the
+  immediately following one), TASKS.md used to track pending feedback items.
+  This makes the "share experience from other created plugins later" ask an
+  enforced rule rather than a hope.
 - **Task K3-3 executed (2026-09-13, plan K3-3):** two kit host modules.
   `plugin-kit/src/host/hot-reload-store.ts`: readConfigRaw / atomicWriteJson
   (with a tempPrefix option — the handoff shim passes its

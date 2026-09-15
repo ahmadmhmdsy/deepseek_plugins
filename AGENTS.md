@@ -37,12 +37,48 @@ and fixes the repo-specific conventions CLAUDE.md points here for.
 | Usage (humans) | `README.md` — **does not exist yet**; created in Task 14 | after Task 14 | when commands or usage change |
 | **Incidents** (issue + fix records) | `docs/incidents/<date>-<topic>.md` | when a recorded issue recurs or is referenced | per the standing rule above: every real issue gets its issue+fix record |
 | **Kit spec/plan** (plugin-kit initiative) | `docs/superpowers/{specs,plans}/2026-09-13-plugin-kit*.md` | before any new-plugin work — read with the best-practices docs | only with user approval |
-| **Best practices** (how to create a plugin) | `docs/best-practices/` (`creating-a-source-plugin.md`, `creating-a-client-card-plugin.md`, `plugin-checklist.md`) | before creating any new plugin | when a proven pattern or trap changes |
-| **Plugin kit** (shared source package) | `plugin-kit/` (`client/chrome.tsx`, `client/settings-form.ts` + `store.ts`, `host/hot-reload-store.ts`, `host/command-mutations.ts` extracted) | before duplicating proved plugin logic | when a module is extracted (with its tests migrated) |
+| **Best practices** (how to create a plugin) | `docs/best-practices/` (`creating-a-source-plugin.md`, `creating-a-client-card-plugin.md`, `plugin-checklist.md`) | before creating ANY new plugin (mandatory reading, next row) | whenever a new experience proves a pattern or trap wrong or extends it — update in the same task that proved it, or record the pending update in TASKS and land it immediately after |
+| **Plugin kit** (shared source package) | `plugin-kit/` (`client/chrome.tsx`, `client/settings-form.ts` + `store.ts`, `host/hot-reload-store.ts`, `host/command-mutations.ts` extracted) | before duplicating proved plugin logic — import from the kit instead | when a new plugin makes a module extraction eligible (≥2 proven users), or an extracted module's contract is extended — with its tests migrated, suite green both targets |
 
 The five an agent needs before doing anything: spec+plan (what to build),
 HANDOFF (where we are), TASKS (what's next), MEMORY (what we learned),
 ENVIRONMENT (what we run on).
+
+### 1a) The plugin-creation loop (mandatory for ANY new plugin)
+
+Creating a plugin is a four-resource read followed by a feedback obligation —
+the guides, the template, and the kit only stay useful if every new plugin
+feeds its experience back into them:
+
+1. **Read** `docs/best-practices/` (both guides + `plugin-checklist.md`) and
+   the kit spec/plan (`docs/superpowers/{specs,plans}/2026-09-13-plugin-kit*.md`),
+   with MEMORY.md §1 (junction/alias mechanics) and §2 (drift ledger).
+2. **Start from the copy-and-rename skeleton** `_template-plugin/` (host-side;
+   `README.md` carries the rename checklist and contract list). For a client
+   card, read `creating-a-client-card-plugin.md` and reuse
+   `plugin-kit/src/client/*` + start from `web-compact-config` instead.
+3. **Import the kit before duplicating field-tested logic** —
+   `plugin-kit/src/{client/settings-form.ts, client/chrome.tsx,
+   host/hot-reload-store.ts, host/command-mutations.ts}` (relative paths only;
+   see the kit's `@module` headers for reuse kind). Never re-create the wheel:
+   if a piece you need is NOT in the kit, first copy-and-own it, then when the
+   next plugin proves the same need (≥2 proven users), extract it into the kit
+   with its tests migrated (the K3 pattern — see HANDOFF K3-1..K3-3).
+4. **Feed back (WHEN — same task that proved it or the immediately following
+   task, not "someday"):**
+   - a pattern/trap proved wrong or extended → update the matching
+     best-practices guide **and** MEMORY §-relevant entry in THAT task;
+   - a new delivery/wiring trap → the source-of-truth pointer table at the
+     top of each guide gets the incident file it came from;
+   - a better skeleton or contract → update `_template-plugin/` (its tests
+     keep passing; note the template KEEPS its TODO-PLUGIN markers by design —
+     it is the COPIES that must end the rename sweep at zero);
+   - a second proven user of a copied module → kit extraction task in the
+     "Plugin kit" row's spirit (spec 2026-09-13 §2/§6 rule).
+   Update TASKS.md with the feedback item while it is pending so it is not
+   silently dropped. No silent rewrites of user-approved docs (spec §7):
+   behavioral contract changes to the kit go through TASKS → HANDOFF §5
+   first.
 
 ## 2) Repository layout
 
