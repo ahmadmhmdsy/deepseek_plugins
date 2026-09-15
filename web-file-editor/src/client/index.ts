@@ -19,10 +19,14 @@ import { NS } from '../ns.ts'
 import { connectTabGate, tabMountContext } from './gating.ts'
 import { faceForRemote, fileEditorFsContribution } from './fs-remote.ts'
 import { EditorView } from './EditorView.tsx'
+import { EditorCardController, type EditorScopeFace } from './card-controller.ts'
+import { EditorSettingsCard } from './SettingsCard.tsx'
 
 export { VIEW_ID, VIEW_LABEL, VIEW_ORDER, VIEW_SLOT } from './registration.ts'
 export { EditorView, type EditorViewInjected, type WorkspaceRowFace } from './EditorView.tsx'
 export { createReadonlyWorkbench, languageForPath, type WorkbenchHandle } from './workbench.ts'
+export { EditorSettingsCard } from './SettingsCard.tsx'
+export { EditorCardController, type EditorCardFace, type EditorCardState } from './card-controller.ts'
 export { connectTabGate, type EditorSettingsFace } from './gating.ts'
 export { faceForRemote, fileEditorFsContribution, FS_NAMESPACE, FS_SERVICE_KEY } from './fs-remote.ts'
 
@@ -78,10 +82,25 @@ export function apply(ctx: ClientContext): void {
   const scope = (editor as unknown as {
     settingsScope: { bind(opts: { namespace: string }): { getSnapshot(): unknown; subscribe(l: () => void): () => void } }
   }).settingsScope.bind({ namespace: NS })
+  // Settings card: one head-switch card in the plugins settings slot, sharing
+  // the same bound scope as the tab gate (both react to namespace flips).
+  const cardController = new EditorCardController(scope as unknown as EditorScopeFace)
+  const slotsBinding = (editor as unknown as Record<string, unknown>).slots as {
+    inject(hole: string, factory: () => unknown): void
+    register(options: Record<string, unknown>, component: unknown): () => void
+  }
+  ctx.effect(() => {
+    slotsBinding.inject('settings.plugin.item', () => slotsBinding.register({
+      name: 'settings.plugin.item',
+      key: NS,
+      inject: () => cardController.inject(),
+    }, EditorSettingsCard))
+    return () => { /* slot disposer handled by the registration row itself */ }
+  }, 'web-file-editor: settings card')
   ctx.effect(() => connectTabGate({
     getSnapshot: () => scope.getSnapshot() as { enabled?: boolean },
     subscribe: (listener) => scope.subscribe(listener),
-  }, tabMountContext((editor as unknown as Record<string, unknown>).slots as never as Parameters<typeof tabMountContext>[0], injected, EditorView)), 'web-file-editor: gated Editor tab')
+  }, tabMountContext(slotsBinding as never as Parameters<typeof tabMountContext>[0], injected, EditorView)), 'web-file-editor: gated Editor tab')
 }
 
 function workspacesRows(editor: EditorClientContext): readonly { workspaceId: string; title: string; path: string }[] {
