@@ -400,6 +400,23 @@ enable/disable the plugin from the gui".
   .live-test/card-open-drawer.png / card-closed.png. Suite after: 95/95 (11
   files) on RUN. Session commits: 0078b0e, 682f923, 070adb0, b4c3970, 500ee19
   — origin/master at 500ee19.
+- **Header enable/disable toggle (6c52415, user request 2026-09-13):** the card
+  head now carries a dedicated plugin toggle for the master `enabled` switch
+  (previously only a checkbox deep in the Switches body section). Design: the
+  disclosure button and the toggle are siblings inside a flex header row — a
+  control must not be nested inside another button (HTML validity +
+  accessibility), so the toggle is a `role="switch"` `aria-checked` button
+  beside the chevron. Semantics unchanged: toggling stages through
+  `face.edit('enabled', ?)` so the unsaved-edits pill, Save/Discard, reset, and
+  external-edit adoption behave exactly as for the Switches checkbox; the head
+  toggle and the body checkbox stay in sync because both render the same
+  projection. Disabled while the Host document is read-only. Evidence: package
+  `tsc --noEmit` exit 0; vitest 95/95 (11 files) on RUN; tsdown rebuild 60.61
+  kB (bundle purity gate: react + own files only). LIVE GUI CHECKPOINT (user,
+  as ever): refresh Settings — if the toggle does not appear, expect the
+  `?rev=<boot-hash>` HTTP-cache staleness (rev unchanged by in-place rebuilds;
+  cache-bust via a hard reload or `fetch(url,{cache:'reload'})`, see
+  docs/incidents/2026-09-13-card-mount-border-missing-and-stale-http-cache.md).
 
 ## 9. File inventory (workspace)
 

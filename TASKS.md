@@ -28,6 +28,7 @@ User-gated tasks say so explicitly.
 | Per-plugin READMEs (user request) | `0078b0e` | compaction-handoff / compact-config-command / web-compact-config README.md |
 | Card UI redesign + mount-fix + incident record | `682f923` `070adb0` `b4c3970` | 95/95 after fix; card restored in live GUI (cache-bust proven); docs/incidents/2026-09-13-card-mount-border-missing-and-stale-http-cache.md |
 | Collapsible disclosure card like built-ins (user request) | `500ee19` | live GUI round-trip verified (expand/collapse + aria-expanded); screenshots .live-test/card-open-drawer.png & card-closed.png; suite 95/95; pushed origin `500ee19` |
+| Header enable/disable toggle in the card head (user request) | `6c52415` | tsc exit 0; vitest 95/95 (11 files) on RUN; bundle rebuilt 60.61 kB; live-GUI refresh is the user's checkpoint (cache-staleness caveat in HANDOFF §8) |
 
 ## Next (queued — approved plan Tasks 11-14)
 
