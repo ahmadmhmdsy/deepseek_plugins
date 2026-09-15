@@ -3,6 +3,12 @@
  * Mutations run the shared validator, then atomically rewrite the single store
  * file (spec §7). Invalid input → usage text, no file change.
  *
+ * The raw-document mutation mechanics (scalar coercion + path set + the
+ * read→mutate→validate→atomic-rewrite round) were extracted into plugin-kit
+ * command-mutations (behavior-unchanged, plugin-kit plan K3-3); this module
+ * keeps the command vocabulary, the usage grammar, and the engine-coupled
+ * preview/archive paths.
+ *
  * @module compact-config-command
  */
 import { existsSync, readdirSync } from 'node:fs'
@@ -13,6 +19,7 @@ import { atomicWriteJson, readConfigRaw } from '../../compaction-handoff/src/sto
 import { parseHandoffConfig } from '../../compaction-handoff/src/config.ts'
 import type { ResolvedHandoffConfig } from '../../compaction-handoff/src/types.ts'
 import type { HandoffCompactionEngine } from '../../compaction-handoff/src/index.ts'
+import { applyPathSet, runConfigMutation } from '../../plugin-kit/src/host/command-mutations.ts'
 import { parseCompactConfigArgs } from './parse.ts'
 
 export const name = 'compact-config-command'
@@ -71,23 +78,7 @@ function formatConfig(config: ResolvedHandoffConfig): string {
   ].join('\n')
 }
 
-function parseScalar(value: string): unknown {
-  if (value === 'true') return true
-  if (value === 'false') return false
-  if (/^-?\d+$/.test(value)) return Number.parseInt(value, 10)
-  if (/^-?\d*\.\d+$/.test(value)) return Number.parseFloat(value)
-  return value
-}
-
-function applySet(raw: Record<string, unknown>, path: readonly string[], value: string): void {
-  let cursor = raw
-  for (let i = 0; i < path.length - 1; i += 1) {
-    const key = path[i]!
-    if (typeof cursor[key] !== 'object' || cursor[key] === null) cursor[key] = {}
-    cursor = cursor[key] as Record<string, unknown>
-  }
-  cursor[path[path.length - 1]!] = parseScalar(value)
-}
+// parseScalar + the path set moved to plugin-kit command-mutations (applyPathSet):
 
 function applyPresetMutation(
   raw: Record<string, unknown>,
@@ -103,7 +94,7 @@ function applyPresetMutation(
     }
     const preset: Record<string, unknown> = { provider: request.provider, model: request.model }
     for (const [field, value] of Object.entries(request.fields)) {
-      applySet(preset, field.split('.'), String(value))
+      applyPathSet(preset, field.split('.'), String(value))
     }
     models.push(preset)
     raw.models = models
@@ -116,7 +107,7 @@ function applyPresetMutation(
     raw.models = models
     return
   }
-  applySet(models[index]!, request.field.includes('.') ? request.field.split('.') : [request.field], request.value)
+  applyPathSet(models[index]!, request.field.includes('.') ? request.field.split('.') : [request.field], request.value)
 }
 
 /** Top-level trigger shorthand: the USAGE grammar's 'set tokens|ratio|mode' path. */
@@ -124,11 +115,12 @@ const TRIGGER_SHORTHAND = new Set(['tokens', 'ratio', 'mode'])
 
 async function mutate(ctx: Context, mutateRaw: (raw: Record<string, unknown>) => void): Promise<string> {
   const filePath = configFilePath(ctx)
-  const raw = structuredClone((readConfigRaw(filePath) ?? {}) as Record<string, unknown>)
-  mutateRaw(raw)
-  const next = parseHandoffConfig(raw) // shared validator — throws before any write
-  await atomicWriteJson(filePath, raw)
-  return 'saved. trigger: ' + JSON.stringify(next.trigger) + ' | use /compact-config show for the full view'
+  return runConfigMutation({
+    filePath,
+    parse: parseHandoffConfig,
+    write: atomicWriteJson,
+    describe: parsed => 'saved. trigger: ' + JSON.stringify(parsed.trigger) + ' | use /compact-config show for the full view',
+  }, mutateRaw)
 }
 
 export function apply(ctx: Context): void {
@@ -143,7 +135,7 @@ export function apply(ctx: Context): void {
         const path = request.path.length === 1 && TRIGGER_SHORTHAND.has(request.path[0]!)
           ? (['trigger', request.path[0]!] as const)
           : request.path
-        return { kind: 'success', text: await mutate(ctx, raw => applySet(raw, path, request.value)) }
+        return { kind: 'success', text: await mutate(ctx, raw => applyPathSet(raw, path, request.value)) }
       }
       if (request.kind === 'presetAdd' || request.kind === 'presetRemove' || request.kind === 'presetSet') {
         return { kind: 'success', text: await mutate(ctx, raw => applyPresetMutation(raw, request)) }

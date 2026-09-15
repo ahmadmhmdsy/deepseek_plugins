@@ -407,6 +407,25 @@ enable/disable the plugin from the gui".
   extraction (K3 gated on a real consumer). New front recorded in TASKS
   ("Plugin kit front"); AGENTS §1 map gains the best-practices rows when K1
   lands.
+- **Task K3-3 executed (2026-09-13, plan K3-3):** two kit host modules.
+  `plugin-kit/src/host/hot-reload-store.ts`: readConfigRaw / atomicWriteJson
+  (with a tempPrefix option — the handoff shim passes its
+  '.handoff-config.tmp-' prefix so file evidence is unchanged) and the generic
+  HotReloadStore (dir watch with 150ms debounce, invalid-edit warn + keep-last-
+  good adopt, disposable watcher, replaceCurrent hook for typed update paths).
+  `compaction-handoff/src/store.ts` is now a thin shim supplying the handoff
+  vocabulary over the loop (parseHandoffConfig + deepFreeze + log tag), keeping
+  every module export and behavior. `plugin-kit/src/host/command-mutations.ts`:
+  parseScalar, applyPathSet (the nested path set), and runConfigMutation (the
+  read-clone → mutate → shared-validator → atomic-rewrite → describe round;
+  validator throws BEFORE any write). `compact-config-command` imports them;
+  its own grammar/preset logic stays. Evidence: vitest 104/104 (13 files) on
+  RUN and on the DEV fork (junction round-trip); package tsc error counts
+  EQUAL the pre-existing fork-target drift-ledger baseline (M1 7, M2 6 —
+  measured at HEAD via a stash round-trip, none in the touched files);
+  --dump-config exit 0. Operational note: a stash/pop used for the baseline
+  comparison initially left a partially-emptied stash (kept entry); recovered
+  by re-extracting the stashed blobs — no work lost, no force operations.
 - **Task K3-2 executed (2026-09-13, plan K3-2):** `plugin-kit/src/client/settings-form.ts`
   extracted the controller's generic machinery: ParsedNumber + the three text
   parsers + numToText/strToText/boolValue/deepEqual/fieldView, the generic
