@@ -8,7 +8,10 @@ owns the approved task definitions.
 
 ## File Editor plugin (Queued — direction approved 2026-09-14, plan: docs/superpowers/plans/2026-09-14-file-editor-plugin.md)
 
-- **FE-M-A — View-only Monaco editor tab** in_progress —
+- **FE-M-A — View-only Monaco editor tab** `in_progress` —
+  - [x] FE-M-A Task 1 — tab path de-risk: conversation.view placeholder registered (id 'editor', order 15); bundle 3.03 kB; suite 106/106 (14 files) on RUN and DEV; tsc zero NEW errors (local slot shim; vendor-baseline noise documented in HANDOFF §8g); patch rows + profile delivery junction + composition check PASS — commit 364043f. **Live-GUI tab = user checkpoint (needs a harness boot of the web profile; never restart the running harness ourselves).**
+  - [x] FE-M-A Task 2 — settings enable/disable gate (commit fe66813): file-editor-config.json store + parseEditorConfig validator (fail-fast); host bridge registers the `file-editor` settings namespace via plugin-kit hot-reload-store (boot adopt / echo-guarded commit / external re-adopt); the client gate mounts/withdraws the tab live off settingsScope. 113/113 (16 files) on RUN and DEV; tsc zero NEW delta; DEV composition check exit 0.
+  - [ ] FE-M-A Task 3 — fs service + explorer tree + lazy Monaco workbench (see plan doc §Typert research: out-of-tree Remote namespaces ride the checkout's tsdown generator face plugin; host interactive candidate = DirectoryPicker-like service or generator-emitted typert.host/remote-client faces).
   - [x] FE-M-A Task 1 — tab path de-risk: conversation.view placeholder registered (id 'editor', order 15); bundle 3.03 kB; suite 106/106 (14 files) on RUN and DEV; tsc zero NEW errors (local slot shim; vendor-baseline noise documented in HANDOFF §8g); patch rows + profile delivery junction + composition check PASS — commit 364043f. **Live-GUI tab = user checkpoint (needs a harness boot of the web profile; never restart the running harness ourselves).**
 - **FE-M-B — Write support** `pending` — host fs service (allowlist'd workspace roots), save/dirty/conflict flow, create/rename/delete.
 - **FE-M-C — Drag-drop & reorganize** `pending` — DnD move, external import, workspace search. NOT forgotten — lives here and in the plan doc.
