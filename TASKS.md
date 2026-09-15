@@ -89,11 +89,13 @@ plugin-kit so future plugins import/inherit instead of re-deriving.
 - **Task K1 — best-practices docs** `done` (3 guides: source plugin, client
   card, claim-done checklist)
 - **Task K2 — `_template-plugin/` copy-and-rename skeleton** `done`
-- **Task K3 — plugin-kit extraction** `in_progress` — user ordered early
+- **Task K3 — plugin-kit extraction** `done` — user ordered early
   extraction (2026-09-13; the consumer-gating note is superseded by that
-  explicit call). K3-1 chrome `done` · K3-2 settings-form `done` ·
-  K3-3 host helpers `done` (suite green both targets; tsc error counts
-  identical to the pre-existing drift-ledger baseline).
+  explicit call). K3-1 chrome · K3-2 settings-form · K3-3 host helpers —
+  all landed, suite green on BOTH checkouts after each.
+
+Next plugin-kit step: the next real plugin consumes the kit (see
+`_template-plugin/README.md` and docs/best-practices/).
 
 ## Backlog / parked (out-of-scope ideas; do not expand current tasks into these)
 
