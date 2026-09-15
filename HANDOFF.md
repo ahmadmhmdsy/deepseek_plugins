@@ -621,3 +621,20 @@ TASKS.md · MEMORY.md · ENVIRONMENT.md  live status · durable lessons · machi
 - Client sources: `src/client/fs-remote.ts` (contribution + strict codecs + `faceForRemote` unwrapping RemoteResult), `EditorView.tsx` (workspace select + lazy recursive DirState tree + read-only content pane; inline styles only), `client/index.ts` apply mounts the contribution inside `ctx.effect` for the plugin lifetime and threads `{fs, workspaces}` through the gated registration's `inject` factory.
 - Validation: 26/26 editor tests green RUN (15:36:57) then DEV (15:37:05); composition `--dump-config` exit 0; bundle 19.65 kB (gz 5.48); tsconfig gained the `@deepseek-ai/dsh-typert-protocol` alias path. tsc vendor-chain total 107, zero web-file-editor errors.
 - Known limits (honest): workspace rows snapshot at registration inject (mid-session workspace adds need a tab re-open — Task 4 polish); the write path (M-B) and live end-to-end Remote verification are pending — the first live GUI check is a USER checkpoint.
+
+### Task 4 — Monaco inlined (`be164f0`)
+- User decision answered: OPTION A — inline the engine. `monaco-editor@0.56.0` added as ROOT devDependency in BOTH checkouts via pnpm (additive; the running harness was never restarted or interrupted — recorded caveat). Junction added through link-node-modules' NPM_DEPS mechanism, NOT hand node_modules surgery.
+- Build facts (tsdown 0.22.2 / rolldown 1.1.1):
+  (a) monaco's stylesheets trip the tsdown CSS guard — the purity plugin now stubs any `*.css` resolve into a `we-css-stub:*.dropped.css.js` empty module (loader never loads css chunks; icon font + label decorations degrade, main-thread highlighting unaffected);
+  (b) the deep import path is `monaco-editor/editor/editor.main.js`: the exports map maps `./*.js ` to `./esm/vs/*.js`, so writing the esm/vs prefix directly doubles it into a NONEXISTENT path and silently turns external;
+  (c) `inlineDynamicImports: true` is REQUIRED — monaco's per-language dynamic chunks otherwise emit as separate lib chunks the loader require cannot resolve.
+- Result: single `lib/client.js` 8.69 MB, zero external monaco requires, the react jsx-runtime require still the only platform external. Bundle-shape spec rewritten honestly: min-100 kB + no external monaco require + MonacoEnvironment presence.
+- Runtime: `src/client/workbench.ts` (createReadonlyWorkbench + languageForPath map), `src/client/workers.ts` (Blob silent-worker fallback: link detection/diff degrade, highlighting/folding/search stay main-thread), lazy ContentPane instantiation in EditorView with dispose on unmount/replace.
+- DELTA from approved plan (deviation): 'lazy engine chunk' degraded to lazy INSTANTIATION inside one bundle — the loader forbids additional script URLs and a second handoff would need shell graph rows we must not touch.
+- Validation: 26/26 editor tests green RUN (15:51:10) then DEV (15:51:15); composition exit 0; tsc delta zero. STILL PENDING live GUI verification (user checkpoint): engine, worker fallback, and the Remote read path have never run in the real browser yet.
+
+### FE-M-A remaining before parity
+1. Chat-click to editor: openView('editor', path) from the Chat link plus the Chat-side gated link rendering.
+2. Settings-card toggle UI in Plugins (client card via kit), mirroring file-editor-config.json.
+3. Workspace-row refresh polish (Task 3b known limit).
+Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delete) and FE-M-C (DnD/reorganize, workspace search) stay queued and are NOT forgotten.
