@@ -607,3 +607,17 @@ docs/superpowers/{specs,plans}/      the two source documents
 HANDOFF.md                           this file (narrative + deviations ledger)
 TASKS.md · MEMORY.md · ENVIRONMENT.md  live status · durable lessons · machine facts
 ```
+
+## 9. File editor front — FE-M-A records (2026-09-15, tasks on TASKS.md)
+
+### Task 3 host HALF — FileEditorFs Remote service + policy engine (`c523731`)
+- Host: `web-file-editor/src/remote/index.ts` = thin Typert face `FileEditorFs` ('fileEditor' namespace, `static inject = ['workspaceRegistry']`, `@Remote('list')`/`@Remote('read')`), mounted from apply via `ctx.plugin(FileEditorFs)`. All disk contact in `src/remote/policy.ts`: listEntries (directories-first, default-hidden skipped), readFileContent (8 MB cap + magic-head binary refusal), assertRelPolicy (traversal + hidden refusal), ensureTheRealPathStays (symlink real-path containment). Shared constants in `src/remote/paths.ts`.
+- LESSON A: a TypertRemoteService CANNOT be unit-instantiated with a fake ctx (cordis Service base calls `ctx.reflect.provide`) — the policy layer was extracted and tested over a real temp workspace instead (12-test suite).
+- LESSON B: three test-data bugs cost three red runs: 'hidden.txt' is NOT a dotfile (policy correct), the cap message reads 'byte read cap', and a symlink to the workspace ROOT ITSELF is legitimately contained (the escape test must point outside the root).
+- Wire shape: one request object parameter named `request` (wire `request`); the host `methodParameterNames` reads the parameter name off the live function string, so the TS source spelling is part of the wire contract.
+
+### Task 3b client HALF — fileEditor Remote mount + explorer tree (`f0f639c`)
+- KEY FACT: the Client `$mount` path (`packages/api/gateway/src/client/index.ts`, `requireStrictDescriptor`) REFUSES src-json codecs — the earlier 'src-json descriptors' assumption was WRONG. Client descriptors must be STRICT: `{mode:'strict', typeSymbol:'fileEditor:<shape>', schema:{parse(v)}}` with plain validating parsers. The Host ignores them: its dispatch derives SRC descriptors from the live decorated service, where src-json passes freely.
+- Client sources: `src/client/fs-remote.ts` (contribution + strict codecs + `faceForRemote` unwrapping RemoteResult), `EditorView.tsx` (workspace select + lazy recursive DirState tree + read-only content pane; inline styles only), `client/index.ts` apply mounts the contribution inside `ctx.effect` for the plugin lifetime and threads `{fs, workspaces}` through the gated registration's `inject` factory.
+- Validation: 26/26 editor tests green RUN (15:36:57) then DEV (15:37:05); composition `--dump-config` exit 0; bundle 19.65 kB (gz 5.48); tsconfig gained the `@deepseek-ai/dsh-typert-protocol` alias path. tsc vendor-chain total 107, zero web-file-editor errors.
+- Known limits (honest): workspace rows snapshot at registration inject (mid-session workspace adds need a tab re-open — Task 4 polish); the write path (M-B) and live end-to-end Remote verification are pending — the first live GUI check is a USER checkpoint.
