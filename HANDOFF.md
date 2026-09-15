@@ -633,8 +633,14 @@ TASKS.md · MEMORY.md · ENVIRONMENT.md  live status · durable lessons · machi
 - DELTA from approved plan (deviation): 'lazy engine chunk' degraded to lazy INSTANTIATION inside one bundle — the loader forbids additional script URLs and a second handoff would need shell graph rows we must not touch.
 - Validation: 26/26 editor tests green RUN (15:51:10) then DEV (15:51:15); composition exit 0; tsc delta zero. STILL PENDING live GUI verification (user checkpoint): engine, worker fallback, and the Remote read path have never run in the real browser yet.
 
-### FE-M-A remaining before parity
-1. Chat-click to editor: openView('editor', path) from the Chat link plus the Chat-side gated link rendering.
-2. Settings-card toggle UI in Plugins (client card via kit), mirroring file-editor-config.json.
-3. Workspace-row refresh polish (Task 3b known limit).
+### Task 5 - Plugins settings card toggle (9d48d78, 2026-09-15)
+- Client: src/client/card-controller.ts (EditorCardController over EditorScopeFace = the SAME bound file-editor settingsScope the gate uses; ctor assigns this.scope BEFORE the store field init - useDefineForClassFields ordering, the M3-card slide-critical fact) + src/client/SettingsCard.tsx (kit PluginCardShell, head Switch, enabled/disabled and 'save failed' pills; file-editor-config.json named as host truth).
+- Face: toggle(next) writes 'enabled'; card registered into 'settings.plugin.item' keyed NS via ctx.effect; the card consumer calls the typed hook as useCard(selector) where selector: (snapshot) => snapshot - NOT a precomputed snapshot user.
+- Validation: 31/31 (6 files) RUN (15:56:37) + DEV (15:57:30); bundle rebuilt 8.71 MB card-inclusive; typecheck delta zero (two TS2339/TS2345 slips in the card caught by tsc and fixed before the run); composition exit 0. NOT yet live-verified (user checkpoint).
+
+### FE-M-A Task 6 (chat-click to editor) - BLOCKED, platform-boundary evidence (2026-09-15)
+- The per-session ACTIVE VIEW state (chatStore) is created privately in ui-conversation client apply (apply.ts createChatStore), never published on ctx; the only view writers are actions.setView(viewTab.id) (ConversationSession header tab clicks, skeleton/ConversationSession.tsx:119) and ChatView inspectCall then setView('trajectory') (apply.ts:406-409).
+- Slot children receive useStore/actions only when their registration declares the (private) store handle; an entry cannot obtain another package EngineStoreHandle (ui-slots PropsRuntime = owner + inject face + session standard kit + globals; store hooks ride the store declaration only - runtime/src/client/slots.ts, ui-slots/src/index.ts PropsRuntime).
+- chatFileMentions (optional service, provided by ui-deliverables) lets a provider control WHICH tokens are clickable and the opener closure, but NOT the view switch; re-providing the service from our plugin would silently collide (last apply wins) with ui-deliverables provider - rejected.
+- Verdict: a plugin-side chat-mention click that switches to the Editor tab is impossible without either (a) a ui-conversation change (checkout code - outside the plugin boundary) or (b) a host-side cross-view open service. NEEDS_USER_DECISION recorded on TASKS.md.
 Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delete) and FE-M-C (DnD/reorganize, workspace search) stay queued and are NOT forgotten.
