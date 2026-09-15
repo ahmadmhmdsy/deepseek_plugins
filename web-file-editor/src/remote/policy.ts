@@ -8,7 +8,7 @@
 import { lstatSync, readdirSync, readFileSync, realpathSync, statSync, type Stats } from 'node:fs'
 import { join } from 'node:path'
 import { MAX_READ_BYTES, contained, isBinaryHead, isDefaultHiddenEntry } from './paths.ts'
-import { FsPolicyError, type FsEntry } from './index.ts'
+import { FsPolicyError } from './index.ts'
 
 /** The workspace anchor the policy engine needs (registry row). */
 export interface WorkspaceAnchorLike {

@@ -46,6 +46,7 @@
       "@deepseek-ai/dsh-settings": ["../deepseek-harness/./packages/settings/settings/src"],
       "@deepseek-ai/dsh-settings/types": ["../deepseek-harness/./packages/settings/settings/src/types.ts"],
       "@deepseek-ai/dsh-workspace": ["../deepseek-harness/./packages/workspace/workspace/src"],
+      "@deepseek-ai/dsh-typert-protocol": ["../deepseek-harness/./packages/typert/protocol/src"],
       "@deepseek-ai/dsh-client-runtime": ["../deepseek-harness/./packages/client/runtime/src"],
       "@deepseek-ai/dsh-client-runtime/client": ["../deepseek-harness/./packages/client/runtime/src/client"],
       "@deepseek-ai/dsh-client-ui-slots": ["../deepseek-harness/./packages/client/ui-slots/src"],
