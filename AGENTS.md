@@ -37,7 +37,7 @@ and fixes the repo-specific conventions CLAUDE.md points here for.
 | Usage (humans) | `README.md` — **does not exist yet**; created in Task 14 | after Task 14 | when commands or usage change |
 | **Incidents** (issue + fix records) | `docs/incidents/<date>-<topic>.md` | when a recorded issue recurs or is referenced | per the standing rule above: every real issue gets its issue+fix record |
 | **Kit spec/plan** (plugin-kit initiative) | `docs/superpowers/{specs,plans}/2026-09-13-plugin-kit*.md` | before any new-plugin work — read with the best-practices docs | only with user approval |
-| **Best practices** (how to create a plugin) | `docs/best-practices/` (Task K1) | before creating any new plugin | when a proven pattern or trap changes |
+| **Best practices** (how to create a plugin) | `docs/best-practices/` (`creating-a-source-plugin.md`, `creating-a-client-card-plugin.md`, `plugin-checklist.md`) | before creating any new plugin | when a proven pattern or trap changes |
 | **Plugin kit** (shared source package) | `plugin-kit/` (Task K3, consumer-gated) | before duplicating proved plugin logic | when a module is extracted (with its tests migrated) |
 
 The five an agent needs before doing anything: spec+plan (what to build),

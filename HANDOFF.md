@@ -407,6 +407,18 @@ enable/disable the plugin from the gui".
   extraction (K3 gated on a real consumer). New front recorded in TASKS
   ("Plugin kit front"); AGENTS §1 map gains the best-practices rows when K1
   lands.
+- **Task K1 executed (user request 2026-09-13, plugin-kit plan K1-1..K1-3):**
+  `docs/best-practices/` created with the three guides from spec §4:
+  `creating-a-source-plugin.md` (package anatomy, cordis entry, store+shared
+  validator, patch wiring incl. the file:// URL rule, verification loop),
+  `creating-a-client-card-plugin.md` (host-bridge/card split, package.json
+  client contract, tsdown banner contract, purity gate, patch-row `name` =
+  package name rule, junction delivery + ?rev cache staleness, chrome rules
+  incl. the header-control sibling rule from 6c52415), and
+  `plugin-checklist.md` (tsc / target-bin vitest / --dump-config / junction /
+  docs chain / commit style / incident-recording / honest labels). Every
+  section carries source-of-truth pointers instead of duplicating rationale;
+  no unverified claims introduced. Docs-only — no code touched; no test change.
 - **Header enable/disable toggle (6c52415, user request 2026-09-13):** the card
   head now carries a dedicated plugin toggle for the master `enabled` switch
   (previously only a checkbox deep in the Switches body section). Design: the

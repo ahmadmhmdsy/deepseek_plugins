@@ -86,7 +86,7 @@ Spec: `docs/superpowers/specs/2026-09-13-plugin-kit-design.md` · Plan:
 `docs/superpowers/plans/2026-09-13-plugin-kit.md`. Goal: docs + template +
 plugin-kit so future plugins import/inherit instead of re-deriving.
 
-- **Task K1 — best-practices docs** `pending` (3 guides: source plugin, client
+- **Task K1 — best-practices docs** `done` (3 guides: source plugin, client
   card, claim-done checklist)
 - **Task K2 — `_template-plugin/` copy-and-rename skeleton** `pending`
 - **Task K3 — plugin-kit extraction (K3-1 chrome, K3-2 settings-form, K3-3 host
