@@ -20,3 +20,9 @@
       name: web-compact-config
       config:
         configFile: 'D:/my_deepseek_harness/deepseek_plugins/handoff-config.json'
+    # File editor client plugin (FE-M-A): the row names the PACKAGE (the
+    # registry resolves it through the delivery junction and reads its own
+    # dsh.client declaration — a file-URL row keeps the host half mounted but
+    # breaks the client verdict, see MEMORY.md).
+    - id: web-file-editor
+      name: web-file-editor
