@@ -17,6 +17,7 @@ import { deepEqualJson, settingsNamespace } from '@deepseek-ai/dsh-settings'
 import { atomicWriteJson, readConfigRaw } from '../../plugin-kit/src/host/hot-reload-store.ts'
 import { parseEditorConfig } from './config.ts'
 import { NS } from './ns.ts'
+import { FileEditorFs } from './remote/index.ts'
 
 /** Plugin short name (also the loader entry id). */
 export const name = 'web-file-editor'
@@ -45,8 +46,12 @@ function resolveFilePath(config: EditorHostConfig): string {
   return resolve(dirname(here), '..', '..', 'file-editor-config.json')
 }
 
-/** Mount the bridge on the settings service once it exists; a profile without one stays a no-op. */
+/** Mount the host half: fileEditor Remote fs service + the settings bridge.
+ * Each mounts independently so a profile missing one dependency keeps the other.
+ * @param ctx - cordis plugin context.
+ */
 export function apply(ctx: Context, config: EditorHostConfig = {}): void {
+  ctx.plugin(FileEditorFs)
   const filePath = resolveFilePath(config)
   ctx.inject(['settings'], (sctx) => {
     const initial = readConfigRaw(filePath)
