@@ -5,7 +5,7 @@ authoritative home per fact: the full plan-vs-spec **deviations ledger** lives
 in [HANDOFF.md](./HANDOFF.md) §5 (keep the detail there); this file holds the
 durable, reusable lessons and cross-checkout facts.
 
-**Last updated:** 2026-09-10.
+**Last updated:** 2026-09-14.
 
 ## 1. Toolchain & module resolution
 
@@ -207,3 +207,22 @@ durable, reusable lessons and cross-checkout facts.
   per-field path ops only (`set(field)`/`unset(field)`) — nested handoff
   sections are written as whole-section objects (`set('trigger', {...})`); the
   host `applyPathOp` accepts object values, and object layers merge recursively.
+
+## 6. File Editor (Monaco) plugin — durable facts & decisions (2026-09-14)
+
+- **The top-level tab bar is the `conversation.view` slot** (DEV fork verified by
+  grep). Registration pattern to copy: ui-trajectory/src/client/index.ts:77-106 —
+  `ctx.slots.inject('conversation.view', …)` with `{ id, order, label thunk,
+  inject: (sessionId) => props }`. Unload removes the tab ⇒ enable/disable path.
+- Workspaces: `useWorkspaces` global hook over `IWorkspaces` (ui-workspace); the
+  explorer root should be the CURRENT session's workspace (reactive on switch).
+- Chat→view navigation is `openView('<viewId>', arg)` on uiConversation
+  (ChatView.tsx:226 precedent); our 'editor' view id is targetable the same way.
+- User decisions (2026-09-14): M-A view-only first; M-B write + M-C DnD deferred to
+  durably-queued milestones (plan doc + TASKS); explorer session-workspace scoped;
+  state persistence, gitignored-tree defaults, save/dirty + conflict flow are
+  required (approved gap list).
+- Monaco must ship as a LAZY separate tsdown chunk (dynamic import; never in the
+  frozen externals table); client delivery pattern copied from web-compact-config.
+- Plan doc: docs/superpowers/plans/2026-09-14-file-editor-plugin.md (direction
+  approved; formal spec owed before implementation).

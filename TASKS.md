@@ -4,7 +4,13 @@ TASKS.md owns the **live status**; [HANDOFF.md](./HANDOFF.md) owns the narrative
 and evidence; the plan (`docs/superpowers/plans/2026-09-10-auto-compact-handoff.md`)
 owns the approved task definitions.
 
-**Last updated:** 2026-09-10 · **Active front:** M3 (Tasks 13-14) · resume at **Task 13** (patch entry → composition check → NEEDS_USER_DECISION junction).
+**Last updated:** 2026-09-14 · **Active front:** M3 (Tasks 13-14) · resume at **Task 13** (patch entry → composition check → NEEDS_USER_DECISION junction).
+
+## File Editor plugin (Queued — direction approved 2026-09-14, plan: docs/superpowers/plans/2026-09-14-file-editor-plugin.md)
+
+- **FE-M-A — View-only Monaco editor tab** `pending` (user-gated start) — conversation.view slot (id 'editor'), workspace-scoped lazy tree, lazy Monaco chunk, split pane min-limits, chat click → editor, settings enable/disable.
+- **FE-M-B — Write support** `pending` — host fs service (allowlist'd workspace roots), save/dirty/conflict flow, create/rename/delete.
+- **FE-M-C — Drag-drop & reorganize** `pending` — DnD move, external import, workspace search. NOT forgotten — lives here and in the plan doc.
 Statuses: `pending` / `in_progress` / `blocked` / `done` (done = finished AND validated).
 User-gated tasks say so explicitly.
 

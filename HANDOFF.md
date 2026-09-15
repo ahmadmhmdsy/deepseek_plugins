@@ -3,6 +3,7 @@
 **Workspace:** `D:\my_deepseek_harness\deepseek_plugins` (git repo, branch master)
 **Written:** 2026-09-10 · **By:** the implementing agent session (DSH session-4755563c)
 **Revised:** 2026-09-10 — M2 committed (`5bbbd82`), TODO-0 closed with dual-checkout evidence, CLAUDE/AGENTS re-tuned, TASKS/MEMORY/ENVIRONMENT created (live status: [TASKS.md](./TASKS.md))
+**Revised:** 2026-09-14 — new front opened: File Editor (Monaco) client plugin (§8f; plan docs/superpowers/plans/2026-09-14-file-editor-plugin.md)
 **Purpose:** everything a fresh-context agent needs to resume Tasks 11-14 of the
 approved implementation plan without re-deriving anything.
 
@@ -513,7 +514,59 @@ enable/disable the plugin from the gui".
   cache-bust via a hard reload or `fetch(url,{cache:'reload'})`, see
   docs/incidents/2026-09-13-card-mount-border-missing-and-stale-http-cache.md).
 
+## 8f. NEW FRONT — File Editor (Monaco) client plugin (2026-09-14)
+
+**Status:** direction approved in chat by the user; NO code yet. Durable plan:
+*docs/superpowers/plans/2026-09-14-file-editor-plugin.md*; live items FE-M-A/B/C
+in TASKS.md.
+
+**Verified facts (DEV fork checkout, grep 2026-09-14):**
+- The top-level tab bar is the **`conversation.view` slot** (declared by
+  ui-conversation; type row in `dsh-client-ui-conversation/client`).
+  `ui-trajectory/src/client/index.ts:77-106` registers "Trajectory" via
+  `ctx.slots.inject('conversation.view', …)` with id/order/label-thunk and a
+  per-session `inject(sessionId)`. The editor plugin registers the same way
+  (id 'editor', order 15) — lands beside Chat/Trajectory; unloading removes it
+  (the enable/disable path).
+- Workspaces: `ui-workspace` exposes a `useWorkspaces` global hook over
+  `IWorkspaces` (`@deepseek-ai/dsh-api-workspace-controller/client`); sessions
+  bind to workspaces. Explorer root = current session's workspace, reactive.
+- Chat file-click hook: `openView('trajectory', callId)` (ChatView.tsx:226) —
+  our view can be targeted via `openView('editor', <path>)` once registered.
+
+**User decisions (Q&A, 2026-09-14):** M-A (view-only) first; M-B (write) and
+M-C (DnD/reorganize) planned but deferred — queued in TASKS + plan doc, NOT
+forgotten. Explorer scoped to the session's workspace only in M-A. Git/diff → later. My added
+gaps approved: save/dirty/unsaved-close flow, disable hides the Chat open
+affordance too, size/binary fallbacks, tree+tab state persistence, gitignored
+default hiding.
+
+**Key design issues + agreed solutions (detail in the plan doc):**
+- Backend: host-half Cordis fs service (list/read/write), root-escape checks,
+  size/binary caps; browser never touches fs directly.
+- Conflict: mtime-at-load compared on save → reload / overwrite / save-as choices.
+- Monaco: separate lazy chunk via dynamic import; never enters the frozen
+  module-loader externals table; delivery pattern copied from web-compact-config.
+- openView('editor') ordering caveat: chat links fall back to plain text while
+  the view is unregistered.
+
 ## 9. File inventory (workspace)
+
+```
+scripts/link-node-modules.mjs        junction builder (target-aware, name-scan)
+scripts/.dsh-target.txt              recorded target (gitignored — machine-local)
+tsconfig.json                        editor/typecheck facade (paths → dev fork; types-only, not used by vitest)
+vitest.config.ts                     target-driven aliases + inlined decorator plugin
+cordis.patch.yml                     M1+M2 wiring overlay (--patch)
+handoff-config.json                  the single store file (user-editable)
+compaction-handoff/                  M1: src/{index,config,store,trigger,archive,summarize,types}.ts + tests/ (7 files incl. toolchain.spec)
+compact-config-command/              M2: src/{index,parse}.ts + tests/{parse,command}.spec
+probe-dsh-resolution/                keep — resolution regression probe
+docs/superpowers/{specs,plans}/      the two source documents
+docs/superpowers/plans/2026-09-14-file-editor-plugin.md  NEW FRONT: file editor milestone plan (M-A/B/C)
+HANDOFF.md                           this file (narrative + deviations ledger)
+TASKS.md · MEMORY.md · ENVIRONMENT.md  live status · durable lessons · machine facts
+```
 
 ```
 scripts/link-node-modules.mjs        junction builder (target-aware, name-scan)
