@@ -80,6 +80,19 @@ User-gated tasks say so explicitly.
       rendered 2026-09-12 via agent-browser; save→file / external-edit / invalid-input
       sub-checks still await the user's hands-on sign-off).
 
+## Plugin kit front (approved spec/plan 2026-09-13)
+
+Spec: `docs/superpowers/specs/2026-09-13-plugin-kit-design.md` · Plan:
+`docs/superpowers/plans/2026-09-13-plugin-kit.md`. Goal: docs + template +
+plugin-kit so future plugins import/inherit instead of re-deriving.
+
+- **Task K1 — best-practices docs** `pending` (3 guides: source plugin, client
+  card, claim-done checklist)
+- **Task K2 — `_template-plugin/` copy-and-rename skeleton** `pending`
+- **Task K3 — plugin-kit extraction (K3-1 chrome, K3-2 settings-form, K3-3 host
+  helpers)** `pending` — **USER-GATED / consumer-gated**: runs against the next
+  real plugin that needs it, unless the user explicitly orders early extraction.
+
 ## Backlog / parked (out-of-scope ideas; do not expand current tasks into these)
 
 - (empty — record out-of-scope ideas here instead of expanding the requested scope)

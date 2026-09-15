@@ -400,6 +400,13 @@ enable/disable the plugin from the gui".
   .live-test/card-open-drawer.png / card-closed.png. Suite after: 95/95 (11
   files) on RUN. Session commits: 0078b0e, 682f923, 070adb0, b4c3970, 500ee19
   — origin/master at 500ee19.
+- **Plugin kit spec + plan (user request 2026-09-13):** created
+  `docs/superpowers/specs/2026-09-13-plugin-kit-design.md` (approved) and
+  `docs/superpowers/plans/2026-09-13-plugin-kit.md` — three layers: K1
+  best-practices docs, K2 `_template-plugin/` skeleton, K3 `plugin-kit/`
+  extraction (K3 gated on a real consumer). New front recorded in TASKS
+  ("Plugin kit front"); AGENTS §1 map gains the best-practices rows when K1
+  lands.
 - **Header enable/disable toggle (6c52415, user request 2026-09-13):** the card
   head now carries a dedicated plugin toggle for the master `enabled` switch
   (previously only a checkbox deep in the Switches body section). Design: the
