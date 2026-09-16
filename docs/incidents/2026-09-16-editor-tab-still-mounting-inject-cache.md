@@ -101,3 +101,10 @@ bare identifier it references (tsdown will not expand an omitted import into
 bundles without failing the build). The agent-side 30xx harness + headless
 agent-browser loop is the sanctioned way to see slot crashes without the
 user's 3080 session.
+
+
+## Cross-reference
+The blank-after-reload correctness fix above (the three root causes) is the
+prerequisite for the UX polish milestone
+`docs/superpowers/plans/2026-09-14-file-editor-plugin.md` §M-D (2026-09-16
+14:09). M-D is display-only; it assumes the tab actually renders.

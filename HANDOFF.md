@@ -718,3 +718,20 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
   import fix; 31/31 editor tests + tsdown rebuild green at every step; live
   verification PASS on the 3082 headless run (tree + file read working,
   clean console). Incident follow-up + MEMORY + guide §1c updated.
+
+
+### 2026-09-16 — Editor UX review + M-D milestone plan (no code yet)
+- Conducted an impeccable-grade UI/UX review of `web-file-editor` against the
+  kit chrome, the `conversation.view` slot contract, and the best-practices
+  guides. Findings split into Severity 1 (4 critical), 2 (6 quality), 3 (8
+  polish), 4 (parked for M-E). Top issues: tree rows have no hover/focus
+  state, root label leaks the absolute path, loading/error replace the
+  visible entries, no keyboard nav, no breadcrumb, hardcoded colors diverge
+  from kit tokens, Monaco has no theme awareness and no read-only badge.
+- Authored milestone M-D in
+  `docs/superpowers/plans/2026-09-14-file-editor-plugin.md`: eight
+  sub-batches with line-of-code estimates, acceptance criteria, and a
+  four-item risk register (openView contract, theme seam, focus trap, row
+  height budget). TASKS entry FE-M-D `pending`. No code changes in this
+  turn — review and plan only; the next session can start M-D.1 (tree
+  interaction) when the user signs off.

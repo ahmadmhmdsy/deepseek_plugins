@@ -123,6 +123,16 @@ Next plugin-kit step: the next real plugin consumes the kit (see
   Record: docs/incidents/2026-09-16-editor-tab-still-mounting-inject-cache.md
   follow-up. Live 3080 re-verify remains a user checkpoint (Ctrl+F5).
 
+- **Task FE-M-D — Editor tab UX polish (UX review milestone)** `pending`
+  (2026-09-16 14:09) — milestone added to the file-editor plan in
+  `docs/superpowers/plans/2026-09-14-file-editor-plugin.md` §M-D after the
+  thorough UI/UX review. Eight sub-batches (M-D.1 … M-D.7) plus a parked list
+  for M-E (search, copy-path, recent files). Display-only; no data-plane
+  changes. Acceptance: 31/31 editor tests still green, tsdown rebuild green,
+  user-checks-the-live-3080 visual confirmation. Risks R1–R4 documented in the
+  plan (openView contract, theme seam, focus trap, row height budget).
+  Record (review): see HANDOFF §post-COMPAT-1 entry of 2026-09-16 14:09.
+
 ## Backlog / parked (out-of-scope ideas; do not expand current tasks into these)
 
 - (empty — record out-of-scope ideas here instead of expanding the requested scope)
