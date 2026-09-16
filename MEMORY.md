@@ -313,4 +313,19 @@ The pattern: when a plugin needs a token the kit doesn't have, centralize the va
 **Cross-ref.** HANDOFF 2026-09-16 14:44-15:03 (M-D.4 first surfaces `selectionBg` gap) and 2026-09-16 15:11-15:25 (M-D.5 `indentGuide` gap). Future M-E (theme seam initiative) is the natural owner; until then the local constants ship with the plugin.
 
 
+
+### L-7: Plugin resolution at harness boot — what's loaded vs. what's patched (2026-09-16, R5)
+
+`cordis-plugin-loader` resolves each patch entry's `name` field through Node's standard package resolution: walk up from process cwd's `node_modules`, then fall back to the profile-level `$DSH_HOME/profiles/node_modules` (the host healer keeps foreign links).
+
+**Two failure modes for out-of-tree, non-@deepseek-ai/ plugins:**
+1. **No junction at `$DSH_HOME/profiles/node_modules`** — the loader prints "Cannot find package 'web-file-editor'". Fix: add a junction at `$DSH_HOME/profiles/node_modules/web-file-editor -> D:/my_deepseek_harness/deepseek_plugins/web-file-editor` (one-time; persists across fork resets).
+2. **Junction present but `lib/client.js` absent** — the loader errors `MissingClientBundleError` (loud boot failure). Fix: `tsdown -c tsdown.config.ts` before every boot that depends on a new bundle.
+
+**Workaround while R5 is open:** use the patch's `name:` field as a file URL (`file:///D:/my_deepseek_harness/deepseek_plugins/web-file-editor/src/index.ts`) — but MEMORY §1 says a file-URL row mounts the host half only; the client verdict fails. So both modes are partial until the junction lands.
+
+**Future-proofing.** Add to `scripts/link-node-modules.mjs` (or a sibling helper `scripts/link-profile-node-modules.mjs`) a step that junctions each workspace's non-@-scoped plugin package into `$DSH_HOME/profiles/node_modules`. Until then, M-D+ milestones verify via tsc + vitest only, not via live harness.
+
+
+
 ---

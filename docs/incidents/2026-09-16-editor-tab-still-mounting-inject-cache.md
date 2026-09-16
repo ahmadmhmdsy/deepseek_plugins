@@ -215,3 +215,51 @@ Agent-owned 3083 was killed at 14:18 (PID 13752, `Stop-Process -Force`); port co
 - HANDOFF `2026-09-16 15:11-15:25` block for the narrative.
 - MEMORY `L-6` for the kit-tokens-gap finding (`TOKENS.indentGuide`, `TOKENS.selectionBg`, `TOKENS.surface` extraction candidates).
 - Plan: `docs/superpowers/plans/2026-09-14-file-editor-plugin.md` §M-D.5.
+
+
+## M-D.6 partial verification + R5 surface (2026-09-16 15:30-15:42)
+
+### Item 14 + 15 implementation
+- **Item 14** `EditorView.tsx`: workspace picker now uses kit `inputStyle` + `labelStyle` from `plugin-kit/src/client/chrome.tsx`; the picker is hidden when only one workspace is mounted (most sessions). Width 328 matches the tree pane.
+- **Item 15** `SettingsCard.tsx`: pill tone flipped (enabled=accent / disabled=neutral, was enabled-as-neutral both ways). Description trimmed to 7 words. Body collapsed from two near-duplicate paragraphs to one direct sentence. Failed-write line preserved.
+
+### TS2872 test fix (latent from M-D.5)
+The M-D.5 test edit landed a `.toThrow(/regex/ && FsPolicyError)` expression — boolean logic accident; `FsPolicyError` (constructor function) is always truthy so the left truncation made the right operands no-ops. TS2872 caught it on the post-M-D.6 tsc pass. Replaced with proper vitest syntax: `.toThrowError(expect.objectContaining({ name: 'FsPolicyError', message: expect.stringMatching(/too large to preview.*MB.*limit/) }))`. The original assertion was a no-op (the regex short-circuited), so the friendly-msg change in M-D.5 was actually verified by no-vitest-side at all and the prior M-D.5 verdict was over-confident. Suite still passes; flag for honesty.
+
+### R5 — host-bridge seam for settings cards → conversation views
+
+**Discovery.** Plan item 16 calls for an "Open Editor tab" button in the Settings card body that triggers the conversation view switch. The friendly-sounding `openView` function exists, but only on the `conversation.view` slot:
+
+- `packages/client/ui-conversation/src/client/contract/slots.ts` `ConvViewOwnerProps` declares `openView: (view: string, focus: string) => void`. `DefaultConversationViews` passes it to slot entries (verified at lines 15-39 in `DefaultConversationViews.tsx`).
+- `packages/client/ui-settings-plugins/src/client/slot-contract.ts` `SettingsPluginItemOwnerProps` is `{ children?: never }` — intentionally empty. Cards receive nothing from the section.
+
+So a settings card needs **either** (a) an extended slot owner type with a view-opening method, **or** (b) a card-resident dispatch through a host-bridge plugin message that wraps a cordis `planOpenContent` (`packages/client/ui-dockkit/src/engine/planner.ts`).
+
+(a) is cleanest but is a cross-plugin-platform spec change (kit candidate or upstream PR).
+(b) is a 1-plugin bridge — and is honest "plugin owns the seam it needs". Either option is out of scope for M-D.6.
+
+**Verdict.** Filed as `FE-M-D.6.16`. Plan deviation logged in HANDOFF §5.
+
+### R5 — agent-owned harness plugin-resolution gap (deeper seam issue)
+
+**Discovery during live-verification attempt.** The M-D.5 visual-checkpoint screenshots came from a port-3083 harness with token ZNN_KnVyn5IrxPWopp3Kq3Wm_To5C9QVg1kCig2KcEo. That harness must have had a junction somewhere — the screenshots prove the Editor tab was visually rendered. Today's attempt to spin up the same kind of harness failed: the patch entry `name: web-file-editor` produces a Cannot-find-package error because `node_modules/web-file-editor` doesn't exist in cwd (`D:/deepseek-harness_2`) or in `$DSH_HOME/profiles/node_modules/@deepseek-ai/` (no scope; packages without a scope are dropped).
+
+The resolutions:
+- Live 3080 (`D:/deepseek-harness_2` cwd) is NOT browser-accessible without an auth token — and no token is provided in this session.
+- An agent-owned 3083 from the dev fork boots but fails to mount `web-file-editor` because no junction lands it in the resolver path.
+- Adding a junction at `$DSH_HOME/profiles/node_modules/web-file-editor -> D:/my_deepseek_harness/deepseek_plugins/web-file-editor` is the missing step; needs user confirmation before adding to `scripts/link-node-modules.mjs` (the script currently links only scoped packages).
+
+**Verdict.** **Block R5 progress + visual verification until user can either (a) provide a 3080 token for direct visual checks, or (b) approve the profile-node_modules junction addition to the link script.** M-D.6 ships without live verification — the code change is review-able from the diff and covered by tsc + vitest.
+
+**Workaround for agent-side visual checks (when user approves the junction):**
+```powershell
+New-Item -ItemType Junction -Path "$env:DSH_HOME/profiles/node_modules/web-file-editor" `
+  -Target "D:/my_deepseek_harness/deepseek_plugins/web-file-editor"
+# Then boot from D:/deepseek-harness_2 with:
+#   node --import 'file:///D:/.../tsx/dist/esm/index.mjs' apps/cli/src/bin.ts web --port 3083 --no-open
+```
+
+### Cross-refs
+- HANDOFF `2026-09-16 15:30-15:42` block (item 14+15 + item 16 deviation + R5 discovery).
+- MEMORY `L-7` for the harness plugin-resolution gap.
+- TASKS `FE-M-D.6.partial` (done) and `FE-M-D.6.16` (deferred, R5-gated).

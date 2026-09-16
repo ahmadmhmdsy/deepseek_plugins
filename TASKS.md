@@ -4,7 +4,7 @@ TASKS.md owns the **live status**; [HANDOFF.md](./HANDOFF.md) owns the narrative
 and evidence; the plan (`docs/superpowers/plans/2026-09-10-auto-compact-handoff.md`)
 owns the approved task definitions.
 
-**Last updated:** 2026-09-16 15:25 · **Active front:** Editor UX polish — M-D.1 + M-D.2 + M-D.3 + M-D.4 + M-D.5 done (agent-verified on 3083), M-D.6..8 pending user sign-off · live 3080 Ctrl+F5 = M-D.1..5 visual checkpoint.
+**Last updated:** 2026-09-16 15:42 · **Active front:** Editor UX polish — M-D.1..6 partial done (items 14+15; item 16 deferred to FE-M-D.6.16). M-D.7..8 pending user sign-off. Live visual verification pending user 3080 token (R5: plugin-resolution gap blocks agent-owned 3083 too).
 
 ## File Editor plugin (Queued — direction approved 2026-09-14, plan: docs/superpowers/plans/2026-09-14-file-editor-plugin.md)
 

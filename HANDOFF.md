@@ -768,6 +768,33 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
 
 **Cross-ref.** MEMORY `L-5` captures the Monaco+flex race for future work.
 
+### 2026-09-16 15:30-15:42 — M-D.6 partial (Severity 3) shipped items 14 + 15; item 16 deferred to FE-M-D.6.16 (R-gate); live visual verification blocked by harness plugin-resolution gap
+
+**Scope.** Plan §M-D.6 items 14 (workspace picker shell), 15 (settings card pill tone + body). Item 16 (Open Editor tab button) deferred per investigation below.
+
+**Item 14 — workspace picker uses kit `inputStyle` + `labelStyle` shell (NEW).** EditorView's `<select>` now renders a visible "Workspace" label above a kit-bordered select (TOKENS-driven border, radius, transition; width 328). Hidden when only one workspace is mounted (most sessions); the picker is only a control if there's a choice. Kit exports `inputStyle` and `labelStyle` as plain CSSProperties in `plugin-kit/src/client/chrome.tsx`. Local copy-and-own pattern (per AGENTS.md kit rule — `inputStyle` is referenced only here and by no other plugin yet, so extraction is not yet eligible).
+
+**Item 15 — settings card pill tone flipped + body tightened (NEW).** `enabled` → accent tone (was neutral, which made both states visually identical). `disabled` → neutral. Description trimmed from 8 words to 7. Body collapsed from two near-duplicate paragraphs to one — the second "Disabled removes the tab and its data-plane remote from the session" sentence is folded into the first paragraph so the user reads one direct line. `state.failed` error line preserved.
+
+**Test fix (latent TS2872).** `fs-policy.spec.ts` had `.toThrow(/regex/ && FsPolicyError)` — an "always truthy" boolean expression. Fixed with `.toThrowError(expect.objectContaining({ name: 'FsPolicyError', message: expect.stringMatching(/too large to preview.*MB.*limit/) }))`. The previous assertion happened to run (boolean logic glitch in TS), but tsc flagged it on the next pass.
+
+**Item 16 — Open Editor tab button. DEVIATION LOG (HANDOFF §5).** Plan called for an "Open Editor tab" button in the card body that calls `openView(VIEW_ID, '')`. **Investigation found the seam doesn't exist on fork-0.1.6-alpha.1:**
+- `settings.plugin.item` slot owner props are intentionally empty: `packages/client/ui-settings-plugins/src/client/slot-contract.ts` declares `SettingsPluginItemOwnerProps { children?: never }` (the section supplies nothing to the card).
+- `conversation.view` slot DOES expose `openView` (verified at packages/client/ui-conversation/src/client/contract/slots.ts `ConvViewOwnerProps`). EditorView receives it because its source component type is `ConvViewProps`. **But the settings card's component type comes from `PropsRuntime<'settings.plugin.item'>`, which has no view-opening methods.**
+- `packages/client/ui-dockkit/src/engine/planner.ts` exports `planOpenContent`, but a card-resident call requires a host-bridge message wired through a small cordis plugin — not a single line of EditorView code. That's a new plugin or a kit contribution, both of which are out of scope for M-D (UI polish chain).
+
+**Verdict.** **M-D.6 ships items 14 + 15 only.** Item 16 opens as a follow-up `FE-M-D.6.16` (Severity 3) — gated by **R5 (host-bridge seam for settings-card → conversation-view)**. The simplest future implementation: extend the `settings.plugin.item` slot contract with an `openView` field that the host section threads through from the same source the conversation section uses, then `EditorSettingsCard` accepts it as a prop and the button calls it. One-spec-change + 1 prop + 1 button. Filed.
+
+**Live visual verification: SKIPPED this milestone.** Two blockers; both need user attention:
+1. **Live 3080 is auth-gated in this session** — no token, can't see UI.
+2. **Agent-owned 3083 boot attempts ran into a deeper plugin-resolution issue.** The fork's boots reach the dsh URL print (token printed) but the patch's `name: web-file-editor` entry resolves via Node's package lookup, which walks the process cwd's `node_modules` and falls back to `$DSH_HOME/profiles/node_modules` (the host healer). Neither contains `web-file-editor` — my plugin lives in this workspace, not in either of those node_modules trees. **There may be a junction missing** at `$DSH_HOME/profiles/node_modules/@deepseek-ai/web-file-editor -> D:/my_deepseek_harness/deepseek_plugins/web-file-editor` (or a similar mechanism for non-@-scoped plugin packages). MEMORY notes the seam for "out-of-tree plugins need a junction in $DSH_HOME/profiles/node_modules" but the exact pattern for **out-of-tree and out-of-scope** (no @deepseek-ai/ prefix) is what the prior M-D.4/5 boots apparently successfully passed through. Needs investigation. Filed as **R5**.
+
+**Code change is review-able from the diff.** Items 14 + 15 are tiny, mechanical, kit-consistent. The harness-level seam work (R5 + the item-16 follow-up) is independent and has its own plan obligation.
+
+**Validation.** tsc 0 web-file-editor errors. vitest 31/31 PASS. tsdown bundle 8.73 MB clean.
+
+**Cross-ref.** HANDOFF §5 (M-D.6 deviation entry). MEMORY §3 (R5 + kit-extraction for `Select`-shell objects). Incident doc M-D.5 (extends the harness-plugin-resolution investigation).
+
 ### 2026-09-16 15:11-15:25 — M-D.5 (Severity 2 indent guides + depth-cap verification + bonus polish) implemented + visually verified + two incidental discoveries
 
 **Scope.** Plan §M-D.5 items 12, 13.
