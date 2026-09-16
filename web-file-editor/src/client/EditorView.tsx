@@ -137,6 +137,22 @@ const rowChevronStyle: CSSProperties = {
   display: 'inline-flex', justifyContent: 'center', alignItems: 'center',
   width: 18, color: TOKENS.textMuted,
 }
+/** Per-nesting-level guide line. Kit has no indent-guide token; centralizing
+ *  the value here makes a future extraction (TOKENS.indentGuide) trivial.
+ *  Reuses the neutral-selection alpha (0.18) — same family, same intent. */
+const INDENT_GUIDE: string = '1px solid rgba(127,127,127,0.18)'
+/** Root-level children (depth 0): no guide line, normal indent padding. */
+const entriesContainerRootStyle: CSSProperties = {
+  display: 'flex', flexDirection: 'column', gap: 1,
+  paddingInlineStart: 10,
+}
+/** Nested children (depth >= 1): guide line drawn at the indent. */
+const entriesContainerWithGuideStyle: CSSProperties = {
+  display: 'flex', flexDirection: 'column', gap: 1,
+  paddingInlineStart: 10,
+  borderInlineStart: INDENT_GUIDE,
+  marginInlineStart: 4,
+}
 const titleStyle: CSSProperties = { fontSize: 15, fontWeight: 600, margin: 0 }
 const hintStyle: CSSProperties = { fontSize: 12, opacity: 0.7, margin: 0 }
 const preStyle: CSSProperties = {
@@ -373,7 +389,12 @@ export function EditorView(props: ConvViewProps & EditorViewProps): JSX.Element 
     const target = document.querySelector('[data-editor-row-index="' + String(index) + '"]') as HTMLElement | null
     if (target !== null) target.focus()
   }, [flatRows])
-  const onTreeKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>): void => {
+  // Generic over the target: the handler is attached to <button> rows,
+  // to the same <button>s that act as breadcrumb segments, and to the
+  // <div role='tree'> root container. We only read event.key + call
+  // preventDefault/stopPropagation, none element-typed — so KeyboardEvent
+  // (the base class) is sufficient and avoids per-callsite type drift.
+  const onTreeKeyDown = useCallback((event: React.KeyboardEvent<HTMLElement>): void => {
     if (flatRows.length === 0) return
     const current = document.activeElement as HTMLElement | null
     const currentIndex = current === null ? -1 : Number(current.getAttribute('data-editor-row-index') ?? '-1')
@@ -608,10 +629,12 @@ function Entries(props: {
   const loading = state?.loading === true
   const error = state?.error
   const isEmpty = !loading && error === undefined && entries.length === 0
+  const showGuideLine = props.depth > 0
   return (
     <div
-      style={{ display: 'flex', flexDirection: 'column', gap: 1, paddingInlineStart: 10 }}
+      style={showGuideLine ? entriesContainerWithGuideStyle : entriesContainerRootStyle}
       role='group'
+      data-editor-entries-depth={props.depth}
     >
       {error !== undefined && error !== '' ? <p style={errorStyle}>{error}</p> : null}
       {entries.map(entry => {

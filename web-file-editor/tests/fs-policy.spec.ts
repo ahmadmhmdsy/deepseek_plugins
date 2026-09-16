@@ -65,7 +65,9 @@ describe('editor fs policy', () => {
     writeFileSync(join(FIXTURE, 'nul.dat'), Buffer.alloc(512, 0))
     expect(() => readFileContent(join(FIXTURE, 'nul.dat'), 'nul.dat')).toThrow(FsPolicyError)
     writeFileSync(join(FIXTURE, 'more-big.txt'), 'x'.repeat(MAX_READ_BYTES + 1))
-    expect(() => readFileContent(join(FIXTURE, 'more-big.txt'), 'more-big.txt')).toThrow(/read cap/)
+    // User-friendly message: "this file is too large to preview (X MB; the limit is X MB)".
+    // Assert the friendly phrase and the limit-naming, not the literal phrase.
+    expect(() => readFileContent(join(FIXTURE, 'more-big.txt'), 'more-big.txt')).toThrow(/too large to preview/ && /MB.*limit/ && FsPolicyError)
   })
 
   it('accepts a file up to the read cap and refuses one byte beyond', () => {

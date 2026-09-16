@@ -48,7 +48,12 @@ export function readFileContent(abs: string, relPath: string): ReadValue {
     if (lstats.isDirectory()) throw new FsPolicyError('outside-root', 'path is a directory')
     if (!lstats.isFile()) throw new FsPolicyError('outside-root', 'path is not a regular file')
     if (lstats.size > MAX_READ_BYTES) {
-      throw new FsPolicyError('too-large', 'file exceeds the ' + MAX_READ_BYTES + ' byte read cap')
+      const mbCap = (MAX_READ_BYTES / 1024 / 1024).toFixed(0)
+      const mbActual = (lstats.size / 1024 / 1024).toFixed(1)
+      throw new FsPolicyError(
+        'too-large',
+        'this file is too large to preview (' + mbActual + ' MB; the limit is ' + mbCap + ' MB)'
+      )
     }
     const size = lstats.size
     const modifiedMs = statSync(abs).mtimeMs
