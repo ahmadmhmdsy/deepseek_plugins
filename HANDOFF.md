@@ -736,6 +736,33 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
   turn — review and plan only; the next session can start M-D.1 (tree
   interaction) when the user signs off.
 
+
+### 2026-09-16 14:20-14:35 — M-D.2 (Severity 1 navigation primitives) implemented + visually verified
+
+**Issue surfaced during verify.** M-D.2 implementation produced a first bundle that referenced a phantom `onTreeKeyDownStatic` identifier that was not defined anywhere in the source; one of my replace ops removed one occurrence but missed a second because the surrounding line indent differed between the dir-row and file-row JSX. The browser threw `ReferenceError: onTreeKeyDownStatic is not defined` inside the `conversation.view` slot entry — the slot renderer caught it and rendered the Editor tab as an empty fragment, which on the agent-owned harness made the underlying Chat-tab composer bleed through. Same shape as the original incident (blank tab). **Root cause was incomplete removal during a string-substitution pass**, not a new failure mode. **Fix**: direct substring `s.replace("onKeyDown={onTreeKeyDownStatic}", "")` to catch every occurrence; the bubbling-on-tree-container pattern means rows need no per-element keyboard handler. After fix, EditorView mounts cleanly, tree renders, breadcrumb populates, keyboard nav works.
+
+**What landed (commit `f2c5ea7`, `feat(file-editor): M-D.2 navigation — breadcrumb + keyboard nav + identity placeholder`).**
+
+- **Breadcrumb row** above the tree. Anchor = selected file's parent dir if a file is open, else deepest-expanded directory (alphabetic tiebreak on equal length), else workspace root. Renders `workspaceTitle › segment › … › leaf`; non-leaf segments are clickable pills that call `toggleDir` (opens if collapsed); the leaf is rendered non-clickable + bold. Separators are the `›` glyph with `aria-hidden`. Container has `aria-label='Path'`.
+- **Keyboard navigation** via event delegation on the tree container. `flattenRows` walks the `dirs` map in DFS display order; rows carry `tabIndex={0}` + `data-editor-row-index`. Handler: ArrowDown/Up move focus; ArrowRight expands (or moves down if already expanded); ArrowLeft collapses (or jumps to parent for both dir and file rows); Enter/Space activates (toggle for dir, open for file); Home/End jump to first/last. Every key `event.preventDefault()` + `event.stopPropagation()` to keep the slot-renderer focus-trap quiet.
+- **Identity placeholder** replaces the previous `'Editor / still mounting…'` flat text. The booting branch now renders `File Explorer` + `Browse and read files in the active workspace.` + `Workspace: <title>` (when known) + an inline-SVG spinner (border + accent top, `editor-spin` 1s linear keyframes bundled into the existing `<style data-editor-tree-row-styles>` so cleanup stays one-shot). The right-pane empty state mirrors the same identity (`Select a file in the tree to read it here.` CTA).
+- Tree container gains `role='tree'`; rows keep the existing `role='treeitem'` semantics via aria-expanded/aria-selected.
+
+**Evidence (timestamps, agent-owned 3083).**
+
+- 14:30 — `vitest run web-file-editor`: 31/31 PASS.
+- 14:31 — `tsdown -c tsdown.config.ts`: clean (8.72 MB bundle).
+- 14:33 — agent-browser, post-reload, `document.querySelectorAll('.editor-tree-row').length`: 2 (breadcrumb + tree root, both collapsed). After clicking tree root, 31 rows (root + 12 dirs + 17 files at first level of `deepseek_plugins`).
+- 14:34 — keyboard nav: `agent-browser key ArrowDown` → idx 1 (`%SystemDrive%`); `ArrowRight` → `aria-exp=true` (`%SystemDrive%` expanded); `ArrowDown` → idx 2 (`ProgramData`, child of %SystemDrive%); `ArrowLeft` → idx 1, `aria-exp=null` (collapsed); `End` → idx 29 (`tsconfig.tsbuildinfo`, last file).
+- 14:34 — breadcrumb: after expanding `%SystemDrive%`, `[aria-label=Path]` text = `deepseek_plugins›%SystemDrive%` (the `›` separator is between segments).
+- 14:34 — identity placeholder right pane: full text `File Explorer / Browse and read files in the active workspace. / Workspace: deepseek_plugins / Select a file in the tree to read it here.` visible (composer overlap from Chat tab is harness-layer bleed, not editor content).
+
+**Caveats / known limits (honest).**
+
+- Keyboard handler walks `document.querySelector('[data-editor-row-index="X"]')` per key. With ~30 rows this is fast; at depth 48 + many entries the `flattenRows` O(n) walk runs per focus shift. Could memoize the focused element via refs if it becomes perceptible.
+- Breadcrumb anchor when `file === undefined` picks the **deepest** expanded dir — if multiple branches are open, the user sees only one breadcrumb. Acceptable for read-only browsing; a more complete solution would track a separate "focused dir" state, out of scope for M-D.2.
+- Composer-overlap-in-screenshot is a harness-layer artifact (Chat-tab composer renders behind the Editor tab in the session view layout); unrelated to M-D.2.
+
 ### 2026-09-16 14:14-14:18 — M-D.1 (Severity 1 tree interaction) implemented + visually verified
 - **Edit**: `web-file-editor/src/client/EditorView.tsx` (+92/-15): import
   `TOKENS` from `plugin-kit/src/client/chrome.tsx`; thread tokens into border,

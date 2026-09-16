@@ -253,3 +253,17 @@ durable, reusable lessons and cross-checkout facts.
   (2) mounted Remote namespaces surface as ctx services named 'remote.<namespace>' — reachable via ctx.get('remote.'+ns) after own $mount, NEVER a property of ctx.remote; never inject-DECLARE that key (you create it yourself later — declaring parks your plugin at boot: "pending (waiting for service: remote.fileEditor)").
   (3) tsdown does not fail the build on an unimported bare identifier — it EMITS the unbound name; the component crashes as a ReferenceError and the slot entry renders blank with only a console error. Import list discipline + grep for bare names in lib/ after bundling.
   Agent-side verification loop: boot own 30xx harness (--no-open), drive headlessChrome via agent-browser CLI, kill it after; live 3080 stays user-only.
+
+### L-3: Defensive Editor-tab verification (2026-09-16, M-D.2 incident)
+
+When the Editor tab's slot entry throws, the slot renderer swallows the error and renders the tab as an empty fragment — the **visible symptom is identical** to a clean mount (tab strip + composer bleed-through from the Chat tab). Both M-D.1 and M-D.2 had this pattern. The fast proxy for "did the component actually mount?" is one line:
+
+```js
+agent-browser eval 'document.querySelectorAll(".editor-tree-row").length + "|" + (document.querySelector("[data-editor-tree-row-styles]") !== null)'
+```
+
+- `length > 0` AND `<style data-editor-tree-row-styles>` present → mounted.
+- `length === 0` AND style absent → component crashed during render. Check `agent-browser console | Select-String -Pattern error`.
+- `length > 0` AND style absent → impossible (rows imply the style tag from `useEffect` ran).
+
+This check is **cheaper and more reliable than visual inspection** because the slot renderer's error suppression makes a screenshot indistinguishable from a working mount.

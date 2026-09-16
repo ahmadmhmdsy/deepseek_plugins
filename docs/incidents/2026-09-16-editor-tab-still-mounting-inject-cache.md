@@ -109,6 +109,15 @@ prerequisite for the UX polish milestone
 `docs/superpowers/plans/2026-09-14-file-editor-plugin.md` §M-D (2026-09-16
 14:09). M-D is display-only; it assumes the tab actually renders.
 
+
+## M-D.2 live verification (2026-09-16 14:20-14:35, agent-owned 3083)
+
+Same slot entry, different cause this time. The M-D.2 first-pass bundle referenced `onTreeKeyDownStatic` — a phantom identifier left in the source by an incomplete string-substitution sweep during the multi-edit pass. Browser threw `ReferenceError` inside the `conversation.view` slot; renderer caught it; Editor tab rendered as empty fragment; Chat-tab composer bled through. Same blank symptom, different root cause. **Fix**: direct substring replace to catch every occurrence of the phantom handler reference, since the rows rely on event-bubbling to the tree container (which holds the real `onTreeKeyDown`) and need no per-element handler. After fix, mount is clean.
+
+This is the **second** time the Editor tab has rendered blank for an agent-owned harness — and the second time the slot renderer's error-suppression makes a silent render failure look identical to a successful mount. Both M-D.1 and M-D.2 incidents reinforce the **defensive verification rule**: after any EditorView edit, **always re-check `document.querySelectorAll('.editor-tree-row').length > 0`** before claiming visual success; a successful screenshot of the tab strip is not evidence the slot entry ran.
+
+The agent-browser console log is the source of truth — read it via `agent-browser console | Select-String -Pattern error` before committing. The `data-editor-tree-row-styles` `<style>` tag presence is also a fast proxy: if it's missing, the component never mounted.
+
 ## M-D.1 live verification (2026-09-16 14:14-14:18, agent-owned 3083)
 
 After landing M-D.1 source + bundle, the agent booted an isolated harness on
