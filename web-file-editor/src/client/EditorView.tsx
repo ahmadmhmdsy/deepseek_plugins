@@ -64,26 +64,46 @@ const containerStyle: CSSProperties = {
 }
 const treePaneStyle: CSSProperties = {
   display: 'flex', flexDirection: 'column', gap: 6, flex: '0 0 auto',
-  width: 300, minWidth: 200, overflow: 'hidden',
+  width: 340, minWidth: 240, overflow: 'hidden',
 }
 const treeScrollStyle: CSSProperties = {
   overflowY: 'auto', overflowX: 'hidden', minWidth: 0,
-  borderInlineEnd: '1px solid ' + TOKENS.border, paddingInlineEnd: 8,
+  borderInlineEnd: '1px solid ' + TOKENS.border, paddingInlineEnd: 8, paddingInlineStart: 2,
 }
 const contentStyle: CSSProperties = {
   flex: '1 1 auto', minWidth: 320, overflow: 'auto',
   background: TOKENS.disabledBackground, borderRadius: 6, padding: 8,
 }
 const rowStyle: CSSProperties = {
-  display: 'block', width: '100%', cursor: 'pointer', padding: '2px 6px',
-  borderRadius: 4, overflowWrap: 'anywhere', textAlign: 'start',
+  display: 'grid',
+  gridTemplateColumns: '18px 18px minmax(0, 1fr) auto auto',
+  columnGap: 6, alignItems: 'center',
+  width: '100%', cursor: 'pointer', padding: '2px 6px',
+  borderRadius: 4, overflow: 'hidden', textAlign: 'start',
   border: 'none', background: 'transparent', font: 'inherit', fontSize: 13,
   transition: 'background-color 120ms ease',
+  color: TOKENS.text,
 }
 const rowSelectedStyle: CSSProperties = {
   ...rowStyle,
   background: 'rgba(127,127,127,0.18)',
   boxShadow: 'inset 2px 0 0 ' + TOKENS.accent,
+}
+const rowGlyphStyle: CSSProperties = {
+  display: 'inline-flex', justifyContent: 'center', alignItems: 'center',
+  color: TOKENS.textMuted, width: 18,
+}
+const rowNameStyle: CSSProperties = {
+  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  minWidth: 0, // grid overflow guard
+}
+const rowMetaStyle: CSSProperties = {
+  fontSize: 12, color: TOKENS.textMuted, fontVariantNumeric: 'tabular-nums',
+  whiteSpace: 'nowrap',
+}
+const rowChevronStyle: CSSProperties = {
+  display: 'inline-flex', justifyContent: 'center', alignItems: 'center',
+  width: 18, color: TOKENS.textMuted,
 }
 const titleStyle: CSSProperties = { fontSize: 15, fontWeight: 600, margin: 0 }
 const hintStyle: CSSProperties = { fontSize: 12, opacity: 0.7, margin: 0 }
@@ -201,6 +221,36 @@ function deepestExpandedDir(dirs, workspaceId) {
 function splitPath(rel) {
   return rel === '' ? [] : rel.split('/')
 }
+
+
+/** Compact size formatter for the tree-row metadata column. */
+function formatSize(n: number): string {
+  if (n < 1024) return String(n) + ' B'
+  if (n < 1024 * 1024) return (n / 1024).toFixed(n < 10 * 1024 ? 1 : 0) + ' KB'
+  if (n < 1024 * 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MB'
+  return (n / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
+}
+
+/** Relative-time formatter: 'just now', '5 min ago', '2 days ago', 'Mar 14'. */
+function formatRelativeTime(ms: number, now: number): string {
+  const diff = Math.max(0, now - ms)
+  const sec = Math.floor(diff / 1000)
+  if (sec < 45) return 'just now'
+  const min = Math.floor(sec / 60)
+  if (min < 60) return String(min) + ' min ago'
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return String(hr) + ' hr ago'
+  const day = Math.floor(hr / 24)
+  if (day < 30) return String(day) + ' day' + (day === 1 ? '' : 's') + ' ago'
+  // Beyond a month: short calendar date.
+  const d = new Date(ms)
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  return months[d.getMonth()] + ' ' + String(d.getDate())
+}
+
+/** 14x14 inline-SVG glyphs (kit has no icon pack; path strings only). */
+const FOLDER_SVG = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1.5 3.5A1.5 1.5 0 0 1 3 2h2.879a1.5 1.5 0 0 1 1.06.439l.83.83.47.47a.5.5 0 0 0 .354.146H13a1.5 1.5 0 0 1 1.5 1.5v6.615A1.5 1.5 0 0 1 13 13.5H3a1.5 1.5 0 0 1-1.5-1.5V3.5Z"/></svg>'
+const FILE_SVG = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3.5 1.75A1.75 1.75 0 0 0 1.75 3.5v9A1.75 1.75 0 0 0 3.5 14.25h9A1.75 1.75 0 0 0 14.25 12.5V5.621c0-.464-.184-.909-.513-1.237L10.866 1.513A1.75 1.75 0 0 0 9.629 1H3.5Zm5.75 1.5v2.5A1.25 1.25 0 0 0 10.5 7h2.75v5.5a.25.25 0 0 1-.25.25h-9a.25.25 0 0 1-.25-.25v-9a.25.25 0 0 1 .25-.25h5Z"/></svg>'
 
 type FileUiState = DirState & { readonly read: FsReadResult | undefined }
 
@@ -379,7 +429,7 @@ export function EditorView(props: ConvViewProps & EditorViewProps): JSX.Element 
     <div style={containerStyle} data-editor-workspace={workspaces.find(w => w.workspaceId === effectiveWorkspace)?.title}>
       <div style={treePaneStyle}>
         <select
-          style={{ fontSize: 13, maxWidth: 288 }}
+          style={{ fontSize: 13, maxWidth: 328 }}
           value={effectiveWorkspace}
           onChange={(event) => { setWorkspaceId(event.target.value) }}
           aria-label="Workspace"
@@ -541,15 +591,18 @@ function Entries(props: {
             <div key={childRel}>
               <button
                 className='editor-tree-row'
-                title={childRel}
+                title={childRel + (entry.size !== 0 ? ' (' + formatSize(entry.size) + ', modified ' + formatRelativeTime(entry.modifiedMs, Date.now()) + ')' : '')}
                 style={rowStyle}
                 aria-expanded={expanded}
                 tabIndex={0}
                 data-editor-row-index={props.getRowIndex(childRel)}
                 onClick={() => { props.toggleDir(props.workspaceId, childRel) }}
               >
-                {expanded ? EXPANDED : COLLAPSED}
-                {entry.name}
+                <span style={rowChevronStyle} aria-hidden='true'>{expanded ? EXPANDED : COLLAPSED}</span>
+                <span style={rowGlyphStyle} dangerouslySetInnerHTML={{ __html: FOLDER_SVG }} />
+                <span style={rowNameStyle}>{entry.name}</span>
+                <span style={rowMetaStyle}>{'—'}</span>
+                <span style={rowMetaStyle}>{formatRelativeTime(entry.modifiedMs, Date.now())}</span>
               </button>
               {expanded && props.depth < 48 && (
                 <Entries {...props} relDir={childRel} depth={props.depth + 1} />
@@ -565,15 +618,18 @@ function Entries(props: {
           <button
             key={childRel}
             className='editor-tree-row'
-            title={childRel}
+            title={childRel + ' (' + formatSize(entry.size) + ', modified ' + formatRelativeTime(entry.modifiedMs, Date.now()) + ')'}
             aria-selected={isSelected}
             style={isSelected ? rowSelectedStyle : rowStyle}
             tabIndex={0}
             data-editor-row-index={props.getRowIndex(childRel)}
             onClick={() => { props.openFile(props.workspaceId, childRel) }}
-            
           >
-            {entry.name}
+            <span style={rowChevronStyle} aria-hidden='true'>&nbsp;</span>
+            <span style={rowGlyphStyle} dangerouslySetInnerHTML={{ __html: FILE_SVG }} />
+            <span style={rowNameStyle}>{entry.name}</span>
+            <span style={rowMetaStyle}>{formatSize(entry.size)}</span>
+            <span style={rowMetaStyle}>{formatRelativeTime(entry.modifiedMs, Date.now())}</span>
           </button>
         )
       })}
