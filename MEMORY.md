@@ -93,8 +93,10 @@ durable, reusable lessons and cross-checkout facts.
 - `compactSurfaceRegion` now needs a `recover(error, owner, sourceEventSeqs, abort)` dep (mirror parent body); `CallId` branding: `callIdBrand.ToolCallId ?? callIdBrand.CallId`.
 - New release native file preview supersedes any client chat-click→editor wiring (user decision 2026-09-15).
 
+- Harness delivery seam: `$DSH_HOME` = `C:\Users\Ahmad Mahmoud\.dsh`; `profiles/web/cordis.patch.yml` is the permanent plugin layer ("suite loads on EVERY boot"); client packages reach the suite via symlinks in `profiles/node_modules` (shared fallback, auto-healed to the booting checkout). Live 3080 harness may ALREADY boot from a checkout newer than rc.7 — verify the PID command line before assuming.
+- `/plugins/<id>/client.js` direct GET is NOT the live route; clients serve via `/plugins/??<id>/client.js,+>&rev=` combo assembled per boot — probing the naive URL misleads.
 
-## 3. Testing gotchas
+### 3. Testing gotchas
 
 - Writing TS spec files through tooling: escape backticks (`\x60`) or use
   `new RegExp('...')` — heredoc-style writes choke on raw fences/regexes.

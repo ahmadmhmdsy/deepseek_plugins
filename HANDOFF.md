@@ -594,6 +594,16 @@ Key fixes (details in the incident record):
 - Static `Config` heal: parent `BasicCompactionEngine.Config` has **no `.concat()`** (runtime TypeError killed whole-file imports) — plugin-level Config declares only `configFile` (engine tuning comes from the config file), so plain `z.object({ configFile: z.string() })`.
 - `recover` callback wired into `compactSurfaceRegion` deps mirroring parent 2026-09-15 body.
 
+### 8h-append — applied to the harness (2026-09-15, same day)
+
+Discovery (read-only): the LIVE 3080 harness already boots from the NEW checkout — PID 22892 `node --import tsx/esm apps/cli/src/bin.ts "web"`, cwd `D:\deepseek-harness_2`, no `--patch` flag. It loads the suite through:
+
+- `$DSH_HOME` = `C:\Users\Ahmad Mahmoud\.dsh` → `profiles/web/cordis.patch.yml` — the permanent patch layer a previous session wrote (comment header says "makes the auto-compact handoff suite load on EVERY boot of the 3080 harness"); it mounts `compaction-handoff` + `compact-config-command` (file:// URLs) and `web-compact-config` + `web-file-editor` (package names), disables `compaction-basic`.
+- Client delivery: `$DSH_HOME/profiles/node_modules/web-compact-config -> workspace package` and `.../web-file-editor -> workspace package` symlinks (the shared fallback), which the loader heals against the boot checkout — the whole shared fallback is stamped 2026-09-15 08:37 with deepseek-harness_2 targets.
+
+Native-composition verification (no `--patch`): `node --import tsx/esm apps/cli/src/bin.ts --profile web --dump-config` (cwd `D:/deepseek-harness_2`) → exit 0, four plugin rows present, `compaction-basic` row `disabled: true`. `lib/client.js` exists for both client plugins after today's tsdown rebuild.
+
+Caveats (honest): the RUNNING session imported the plugin sources at 08:37, before this session's fixes — the new code activates at the next harness restart (user checkpoint; agents never restart the harness). The direct `/plugins/<id>/client.js` probe returned 404 (clients are served through the ``??combo'' + revision channel assembled per boot); live browser behavior is left to the user's own verification.
 ## 9. File inventory (workspace)
 
 ```
