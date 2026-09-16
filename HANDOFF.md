@@ -5,6 +5,7 @@
 **Revised:** 2026-09-10 — M2 committed (`5bbbd82`), TODO-0 closed with dual-checkout evidence, CLAUDE/AGENTS re-tuned, TASKS/MEMORY/ENVIRONMENT created (live status: [TASKS.md](./TASKS.md))
 **Revised:** 2026-09-14 — new front opened: File Editor (Monaco) client plugin (§8f; plan docs/superpowers/plans/2026-09-14-file-editor-plugin.md)
 **Revised:** 2026-09-15 — FE-M-A Task 3 host HALF landed (FileEditorFs Remote service + policy engine, TASKS FE-M-A Task 3b holds the client remainder)
+**Revised:** 2026-09-15 — compat audit vs DSH release 0.1.6-alpha.1 (`D:\deepseek-harness_2`): NOT compatible as-is — 21/135 tests fail, 15 tsc errors over 8 plugin files; drift pinned and recorded in docs/incidents/2026-09-15-dsh-0.1.6-alpha.1-compatibility-contrast.md (settingsNamespace removed; dsh-client-runtime gone; TokenMeter→session-projection dep; TokenMeasurement/SummarizationInput/RegionDependencies/Message-role drift; monaco absent). Unity fix list inside.
 **Purpose:** everything a fresh-context agent needs to resume Tasks 11-14 of the
 approved implementation plan without re-deriving anything.
 

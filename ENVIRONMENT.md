@@ -17,6 +17,7 @@ stale; update this file after any tool/version/checkout change.
 | Role | Path | Version (verified 2026-09-10) | Notes |
 |---|---|---|---|
 | **RUN harness (primary target)** | `D:\deepseek_harness\deepseek-harness` | 0.1.0-rc.7 | boots the **currently running harness** (Web GUI `http://127.0.0.1:3080`) — never kill or restart it |
+ **NEW release (compat audited)** | `D:\deepseek-harness_2` | 0.1.6-alpha.1 | audited 2026-09-15 (docs/incidents/2026-09-15-dsh-0.1.6-alpha.1-compatibility-contrast.md) — NOT compatible as-is: 21/135 tests fail, 15 tsc errors; llm/session/compaction/settings/client trees restructured |
 | **DEV fork (secondary target)** | `D:\my_deepseek_harness\deepseek-harness` | 0.1.2-alpha.1 | user fork; remote `ahmadmhmdsy/deepseek-harness-work.git` |
 | DSH home | `C:\Users\Ahmad Mahmoud\.dsh` | — | profiles: `headless`, `web`; **no `tui`** |
 

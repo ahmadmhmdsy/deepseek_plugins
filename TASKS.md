@@ -18,6 +18,8 @@ owns the approved task definitions.
 - **FE-M-A Task 6 — Chat-click → editor** `deferred by user decision (2026-09-15, defer option)` — plugin-side IMPOSSIBLE at current platform boundary: the per-session active-view state (chatStore) is created privately inside ui-conversation's day apply and never published; the only writer of `view` is `actions.setView` (ConversationSession header tabs / ChatView inspectCall); slot children receive neither the store handle nor actions unless they declare the same (private) handle. Researched 2026-09-15 (run reads ui-conversation/src/client/{apply,slots,contract/views}.ts, ui-slots/src/index.ts, runtime/src/client/slots.ts). NEEDS_USER_DECISION on the unblock path (see agent question). — host fs service (allowlist'd workspace roots), save/dirty/conflict flow, create/rename/delete.
 - **FE-M-B — Write support** `pending` — host fs service (allowlist'd workspace roots), save/dirty/conflict flow, create/rename/delete.
 - **FE-M-C — Drag-drop & reorganize** `pending` — DnD move, external import, workspace search. NOT forgotten — lives here and in the plan doc.
+- **COMPAT-1 — port plugin suite to DSH 0.1.6-alpha.1** `pending` (NEEDS_USER_DECISION to start) — relink succeeded (target `D:\deepseek-harness_2`, junction farm consistent except dsh-client-runtime/monaco-editor absent there); composition check exit 0; drift list + fix plan in docs/incidents/2026-09-15-dsh-0.1.6-alpha.1-compatibility-contrast.md. Suite on the new release: 114 passed / 21 failed (vitest, 2026-09-15); tsc facade re-pointed at the new tree (15 errors in our files).
+
 Statuses: `pending` / `in_progress` / `blocked` / `done` (done = finished AND validated).
 User-gated tasks say so explicitly.
 
