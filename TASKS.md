@@ -113,6 +113,16 @@ plugin-kit so future plugins import/inherit instead of re-deriving.
 Next plugin-kit step: the next real plugin consumes the kit (see
 `_template-plugin/README.md` and docs/best-practices/).
 
+- **Task FE-M-F — Editor tab blank-after-reload fix (inject gate + namespace access)** `done`
+  (2026-09-16 14:05) — user reported blank. Root causes: inject-gated ctx reads
+  (added 'remote'/'workspaces' to `inject` + package features), mounted
+  namespaces reach via `ctx.get('remote.'+ns)` (never inject-declared), and a
+  missing `FS_NAMESPACE` import emitted as a bare identifier by tsdown.
+  Verified live on an agent-owned 3082 instance (headless agent-browser drive:
+  explorer + file read PASS, clean console); suite + rebuild green at each step.
+  Record: docs/incidents/2026-09-16-editor-tab-still-mounting-inject-cache.md
+  follow-up. Live 3080 re-verify remains a user checkpoint (Ctrl+F5).
+
 ## Backlog / parked (out-of-scope ideas; do not expand current tasks into these)
 
 - (empty — record out-of-scope ideas here instead of expanding the requested scope)

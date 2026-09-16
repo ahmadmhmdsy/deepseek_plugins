@@ -704,3 +704,17 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
 - STILL OPEN (user checkpoint): live browser confirmation that the tab lists
   and reads workspaces (hard reload first — combo/revision channel re-serves
   the rebuilt bundle on refresh).
+
+
+### 2026-09-16 — Editor blank-after-reload: three stacked root causes fixed (agent-side 30xx verification)
+- User reported the Editor tab blank after reload. Reproduced + diagnosed
+  agent-side on an agent-owned 3082 harness (booted/killed by the agent;
+  3080 untouched) using the agent-browser headless loop; browser console
+  surfaced: inject-gated ctx property access (`cannot get property
+  "workspaces" without inject`), then the namespace-lookup design error
+  (`faceForRemote(ctx.remote)` — namespaces are `remote.<ns>` ctx services),
+  then the bundled bare `FS_NAMESPACE` ReferenceError (missing import).
+- Fixes: inject list + package features, `ctx.get` namespace resolution,
+  import fix; 31/31 editor tests + tsdown rebuild green at every step; live
+  verification PASS on the 3082 headless run (tree + file read working,
+  clean console). Incident follow-up + MEMORY + guide §1c updated.

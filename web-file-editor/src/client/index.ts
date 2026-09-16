@@ -18,7 +18,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { NS } from '../ns.ts'
 import { connectTabGate, tabMountContext } from './gating.ts'
 import type { EditorFsFace } from './fs-remote.ts'
-import { faceForRemote, fileEditorFsContribution } from './fs-remote.ts'
+import { faceForRemote, fileEditorFsContribution, FS_NAMESPACE } from './fs-remote.ts'
 import { EditorView } from './EditorView.tsx'
 import { EditorCardController, type EditorScopeFace } from './card-controller.ts'
 import { EditorSettingsCard } from './SettingsCard.tsx'
@@ -31,8 +31,8 @@ export { EditorCardController, type EditorCardFace, type EditorCardState } from 
 export { connectTabGate, type EditorSettingsFace } from './gating.ts'
 export { faceForRemote, fileEditorFsContribution, FS_NAMESPACE, FS_SERVICE_KEY } from './fs-remote.ts'
 
-/** Required services: slots for the tab; settingsScope for the gate. */
-export const inject = ['slots', 'settingsScope']
+/** Required services: slots for the tab; settingsScope for the gate; remote carries $mount and workspaces feeds the tree. The mounted namespace ('remote.fileEditor') is NOT inject-declared — it does not exist until this plugin's own $mount creates it (a declared waitable key would park the whole boot). */
+export const inject = ['slots', 'settingsScope', 'remote', 'workspaces']
 
 /** Loose client-context merge this plugin actually touches. */
 type EditorClientContext = ClientContext & {
@@ -67,11 +67,12 @@ export function apply(ctx: ClientContext): void {
   let fsFace: EditorFsFace | undefined
   const ensureFace = (): EditorFsFace | undefined => {
     if (fsFace === undefined) {
-      try {
-        fsFace = faceForRemote(editor.remote as unknown as Record<string, unknown>)
-      } catch {
-        return undefined // namespace not mounted yet: keep the busy placeholder
-      }
+      const viewer = editor as unknown as { get?(key: string): unknown }
+      const namespace = viewer.get?.('remote.' + FS_NAMESPACE) as
+        | Record<string, unknown>
+        | undefined
+      if (namespace === undefined) return undefined // not mounted yet: keep the busy placeholder
+      fsFace = faceForRemote({ [FS_NAMESPACE]: namespace })
     }
     return fsFace
   }

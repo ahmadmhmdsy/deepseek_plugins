@@ -247,3 +247,9 @@ durable, reusable lessons and cross-checkout facts.
   constant instead of fresh array literals). Direct-call unit tests with a
   fully-formed face CANNOT catch this — test the inject face as data.
   Record: docs/incidents/2026-09-16-editor-tab-still-mounting-inject-cache.md.
+
+2026-09-16 blank-Editor follow-up (same incident file): THREE more traps for client slot plugins on 0.1.6-alpha.1 —
+  (1) the loader's client ctx is inject-gated: undeclared `ctx.<key>` reads throw 'cannot get property "<key>" without inject' AT RUNTIME (optional chaining does not bypass); declare every key you touch in the `inject` array + matching `dsh.client.inject` features (@deepseek-ai/dsh-api-remotes, -workspace-controller).
+  (2) mounted Remote namespaces surface as ctx services named 'remote.<namespace>' — reachable via ctx.get('remote.'+ns) after own $mount, NEVER a property of ctx.remote; never inject-DECLARE that key (you create it yourself later — declaring parks your plugin at boot: "pending (waiting for service: remote.fileEditor)").
+  (3) tsdown does not fail the build on an unimported bare identifier — it EMITS the unbound name; the component crashes as a ReferenceError and the slot entry renders blank with only a console error. Import list discipline + grep for bare names in lib/ after bundling.
+  Agent-side verification loop: boot own 30xx harness (--no-open), drive headlessChrome via agent-browser CLI, kill it after; live 3080 stays user-only.

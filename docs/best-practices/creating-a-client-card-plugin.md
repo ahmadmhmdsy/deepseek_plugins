@@ -180,3 +180,21 @@ change only `ID`, the entry, and (carefully) the externals list.
 
 Read plugin-checklist.md — a card plugin additionally needs the junction
 reachable and the bundle rebuilt; that checklist owns it.
+
+
+## 1c. Client ctx is inject-gated; mounted Remote namespaces are 'remote.<ns>' services
+
+- Declare every ctx key the client module touches in the module's `inject`
+  array AND the plugin's `dsh.client.inject` feature list. Undeclared
+  `ctx.<key>` reads throw 'cannot get ... without inject' at RUNTIME (the
+  whole slot entry blanks, console: "slot entry crashed in ...").
+- A plugin that mounts its own Remote namespace: declare `remote` only, call
+  `ctx.remote.$mount(...)`, then read the namespace via
+  `ctx.get('remote.' + ns)` once the mount resolves. Never inject-declare
+  '`remote.<ns>`' — you create it yourself, later; declaring it parks the
+  plugin at boot.
+- TS-over-tsdown will NOT fail on an unimported bare identifier; it emits the
+  unbound name. Keep the import list exact; grep `lib/client.js` for bare
+  module-local names after bundling.
+Record: docs/incidents/2026-09-16-editor-tab-still-mounting-inject-cache.md
+(follow-up §"blank after reload").
