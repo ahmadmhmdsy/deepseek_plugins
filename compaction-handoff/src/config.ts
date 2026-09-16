@@ -1,12 +1,20 @@
 /**
- * Shared validator for handoff-config.json — the single store used by the
- * engine, the /compact-config command, and the web card (spec §4, §7, §8).
+ * Shared validator for handoff-config.json — the single store used by
+ * the engine, the /compact-config command, and the web card (spec §4, §7, §8).
  *
  * @module compaction-handoff/config
  */
-import { deepFreeze } from '@deepseek-ai/dsh-llm'
 import type { LlmCallConfig } from '@deepseek-ai/dsh-llm'
 import type { HandoffConfig, ModelPreset, ResolvedHandoffConfig, RetainConfig } from './types.ts'
+
+/** Recursively freeze a JSON-shaped value so callers cannot mutate the resolved config. */
+function deepFreeze<T>(value: T): T {
+  if (value === null || typeof value !== 'object') return value
+  const record = value as Record<string, unknown>
+  Object.freeze(record)
+  for (const key of Object.keys(record)) deepFreeze(record[key])
+  return value
+}
 
 const TRIGGER_KEYS = new Set(['mode', 'ratio', 'tokens'])
 const RETAIN_KEYS = new Set(['ratio', 'tokens'])

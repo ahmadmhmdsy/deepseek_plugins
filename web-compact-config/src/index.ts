@@ -15,7 +15,7 @@ import { basename, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { deepEqualJson, settingsNamespace } from '@deepseek-ai/dsh-settings'
+import { deepEqualJson } from '@deepseek-ai/dsh-util-values'
 import { atomicWriteJson, readConfigRaw } from '../../compaction-handoff/src/store.ts'
 import { parseHandoffConfig } from '../../compaction-handoff/src/config.ts'
 
@@ -107,7 +107,7 @@ export function apply(ctx: Context, config: BridgeConfig = {}): void {
   const filePath = resolveFilePath(config)
   ctx.inject(['settings'], (sctx) => {
     const initial = readConfigRaw(filePath)
-    const scope = sctx.settings.register(settingsNamespace(NS), HandoffSettingsSchema, {
+    const scope = sctx.settings.register(NS, HandoffSettingsSchema, {
       applies: 'live',
       // Cross-field constraints the schema cannot express refuse the write.
       validate: (value) => { parseHandoffConfig(value) },

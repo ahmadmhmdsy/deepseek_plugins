@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { HandoffSettings } from '../src/client/controller.ts'
 import { CompactConfigCardController } from '../src/client/controller.ts'
 

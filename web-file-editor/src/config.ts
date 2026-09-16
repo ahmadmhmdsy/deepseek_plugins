@@ -6,7 +6,15 @@
  *
  * @module web-file-editor/config
  */
-import { deepFreeze } from '@deepseek-ai/dsh-llm'
+
+/** Recursively freeze a JSON-shaped value so callers cannot mutate the resolved config. */
+function deepFreeze<T>(value: T): T {
+  if (value === null || typeof value !== 'object') return value
+  const record = value as Record<string, unknown>
+  Object.freeze(record)
+  for (const key of Object.keys(record)) deepFreeze(record[key])
+  return value
+}
 
 const TOP_KEYS = new Set(['enabled'])
 

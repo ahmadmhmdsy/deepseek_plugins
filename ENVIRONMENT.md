@@ -17,11 +17,11 @@ stale; update this file after any tool/version/checkout change.
 | Role | Path | Version (verified 2026-09-10) | Notes |
 |---|---|---|---|
 | **RUN harness (primary target)** | `D:\deepseek_harness\deepseek-harness` | 0.1.0-rc.7 | boots the **currently running harness** (Web GUI `http://127.0.0.1:3080`) — never kill or restart it |
- **NEW release (compat audited)** | `D:\deepseek-harness_2` | 0.1.6-alpha.1 | audited 2026-09-15 (docs/incidents/2026-09-15-dsh-0.1.6-alpha.1-compatibility-contrast.md) — NOT compatible as-is: 21/135 tests fail, 15 tsc errors; llm/session/compaction/settings/client trees restructured |
+ **NEW release (TARGET-LOCKED)** | `D:\deepseek-harness_2` | 0.1.6-alpha.1 | compat complete 2026-09-15 (135/135 vitest, 0 tsc, bundles rebuilt, dump-config exit 0). Per user decision it supersedes old checkouts where in conflict; FE-M-A Task 6 superseded by native file preview.
 | **DEV fork (secondary target)** | `D:\my_deepseek_harness\deepseek-harness` | 0.1.2-alpha.1 | user fork; remote `ahmadmhmdsy/deepseek-harness-work.git` |
 | DSH home | `C:\Users\Ahmad Mahmoud\.dsh` | — | profiles: `headless`, `web`; **no `tui`** |
 
-- Default target = RUN (the user's universal-target directive, 2026-09-10:
+- **Target lock = `D:\deepseek-harness_2`** (user decision 2026-09-15, supersedes the 2026-09-10 universal-target directive where in conflict). RUN/DEV checkouts are no longer accepted targets for the plugin suite.
   everything must work on RUN and, where possible, on both — implemented in
   commit `c3b9f75`).
 - Verified presence (2026-09-10): `packages/settings/settings/src` exists on
@@ -47,6 +47,7 @@ stale; update this file after any tool/version/checkout change.
 node scripts/link-node-modules.mjs                                                  # re-point junctions (default = RUN)
 & 'D:\deepseek_harness\deepseek-harness\node_modules\.bin\vitest.CMD' run        # suite on RUN target
 & 'D:\my_deepseek_harness\deepseek-harness\node_modules\.bin\vitest.CMD' run     # suite on DEV fork target
+& 'D:\deepseek-harness_2\node_modules\.bin\vitest.CMD' run        # suite on locked target (current)
 # composition check (workdir = RUN checkout):
 node --import tsx/esm apps/cli/src/bin.ts --profile web --patch 'D:/my_deepseek_harness/deepseek_plugins/cordis.patch.yml' --dump-config
 ```

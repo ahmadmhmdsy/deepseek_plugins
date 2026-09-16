@@ -83,6 +83,16 @@ durable, reusable lessons and cross-checkout facts.
   `BlockAssembler.push` on BOTH checkouts** — fixture adapters must stream.
 - token-meter measure nodes are `{ seq, tokens }` on both (fork adds
   `heuristicTokens` internally).
+### 2b. DSH 0.1.6-alpha.1 release drift (COMPAT-1, 2026-09-15)
+
+- `settingsNamespace(ns)` helper REMOVED — register plain namespace object: `sctx.settings.register(NS, schema, …)`; also `deepEqualJson` moved to `@deepseek-ai/dsh-util-values`.
+- `@deepseek-ai/dsh-client-runtime` dissolved — use `Context` from `@deepseek-ai/cordis`; `SettingsScope`/`SettingsScopeSnapshot` from `@deepseek-ai/dsh-client-ui-settings/client`; `SnapshotStore` from `@deepseek-ai/dsh-client-store`.
+- `SessionProjectionRegistry` must be installed BEFORE `TokenMeter` (meter reads `ctx.sessionProjections`); use `TokenMeasurement` from `dsh-token-meter` (nov: `logRevision: SessionLogOffset`, node `heuristicTokens`), never local MeterMeasurement shapes.
+- Assistant `session.append('assistant/message', …)` requires `stream: [{ type: 'text-chunks', time0, index, dt, texts }]`; `SummarizationInput.system?: string` removed; `CommandInvocation` literal needs `commandId: CommandId(...)` + `attachments: []`.
+- `BasicCompactionEngine.Config` (schemastery `z`) has NO `.concat()` — runtime TypeError that breaks whole-file imports; declare a plain additive `z.object`static Config for plugin-level options only.
+- `compactSurfaceRegion` now needs a `recover(error, owner, sourceEventSeqs, abort)` dep (mirror parent body); `CallId` branding: `callIdBrand.ToolCallId ?? callIdBrand.CallId`.
+- New release native file preview supersedes any client chat-click→editor wiring (user decision 2026-09-15).
+
 
 ## 3. Testing gotchas
 

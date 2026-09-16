@@ -7,6 +7,7 @@ import { LlmRuntime, createUserMessage, createMessage, LlmAdapter } from '@deeps
 import type { LlmResolvedModelInfo, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import BasicCompactionEngine from '@deepseek-ai/dsh-compaction-basic'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import HandoffCompactionEngine from '../src/index.ts'
@@ -40,6 +41,7 @@ class WindowAdapter extends LlmAdapter {
 function createContext(window = 1000): Context {
   const ctx = new Context()
   void new LlmRuntime(ctx)
+  void new SessionProjectionRegistry(ctx)
   void new TokenMeter(ctx)
   ctx.llm.registerAdapter([MODEL, 'actual', 'unlisted-provider'], new WindowAdapter(window))
   return ctx
@@ -66,6 +68,7 @@ function conversation(turns = 4, text = 'fixture '.repeat(40).trim()): Session {
       })
     }
     session.append('assistant/message', {
+      stream: [],
       turn,
       step: 1,
       message: createMessage({

@@ -7,7 +7,7 @@
  */
 // Type-only: the settings slot declarations plus the ctx.settingsScope Context
 // merge. Value imports stay bundled-local (client bundle purity gate).
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { CompactConfigCardController } from './controller.ts'

@@ -12,7 +12,7 @@
  */
 // Type-only client imports: their module names are erased before the bundle
 // purity gate, so only platform VALUE imports ever remain in lib/client.js.
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { NS } from '../ns.ts'

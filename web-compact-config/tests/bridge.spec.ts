@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { deepEqualJson, settingsNamespace } from '@deepseek-ai/dsh-settings'
+import { deepEqualJson } from '@deepseek-ai/dsh-util-values'
 import { FileSettingsProvider } from '@deepseek-ai/dsh-settings-file'
 import { parseHandoffConfig } from '../../compaction-handoff/src/config.ts'
 import { apply, HandoffSettingsSchema, NS } from '../src/index.ts'
@@ -125,7 +125,7 @@ describe('bridge over the real settings service', () => {
 
   it('a namespace write flows to the config file', async () => {
     const { ctx, configFile } = await bootBridge({ trigger: { mode: 'tokens', tokens: 5000 } })
-    await ctx.settings.replace(settingsNamespace(NS), { trigger: { mode: 'tokens', tokens: 9000 } })
+    await ctx.settings.replace(NS, { trigger: { mode: 'tokens', tokens: 9000 } })
     await vi.waitFor(() => {
       expect(fileRaw(configFile).trigger).toEqual({ mode: 'tokens', tokens: 9000 })
     })
@@ -157,9 +157,9 @@ describe('bridge over the real settings service', () => {
 
   it('a cross-field-violating write is refused and changes nothing', async () => {
     const { ctx, configFile } = await bootBridge({ auto: true })
-    await expect(ctx.settings.update(settingsNamespace(NS), { retain: { ratio: 0.5, tokens: 100 } }))
+    await expect(ctx.settings.update(NS, { retain: { ratio: 0.5, tokens: 100 } }))
       .rejects.toThrow('mutually exclusive')
-    await expect(ctx.settings.update(settingsNamespace(NS), { trigger: { mode: 'bogus' } }))
+    await expect(ctx.settings.update(NS, { trigger: { mode: 'bogus' } }))
       .rejects.toThrow()
     expect(servedValue(ctx).auto).toBe(true)
     expect(servedValue(ctx).retain).toEqual({})
@@ -172,7 +172,7 @@ describe('bridge over the real settings service', () => {
     expect(servedValue(ctx)).toEqual({
       trigger: {}, retain: {}, archive: {}, summarization: {}, retries: {}, models: [],
     })
-    await ctx.settings.replace(settingsNamespace(NS), { auto: false })
+    await ctx.settings.replace(NS, { auto: false })
     await vi.waitFor(() => {
       expect(existsSync(configFile)).toBe(true)
       expect(fileRaw(configFile).auto).toBe(false)

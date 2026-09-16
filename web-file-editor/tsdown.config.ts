@@ -21,7 +21,7 @@ const PLATFORM_MODULES = [
 ] as const
 
 /** The documented runtime exemption (snapshot-store engine; see the preset). */
-const RUNTIME_STORE_EXEMPTION = '@deepseek-ai/dsh-client-runtime/client'
+const RUNTIME_STORE_EXEMPTION = '@deepseek-ai/dsh-client-ui-settings/client'
 
 const CLIENT_EXTERNALS: readonly string[] = [...PLATFORM_MODULES, RUNTIME_STORE_EXEMPTION]
 

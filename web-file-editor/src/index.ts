@@ -13,11 +13,28 @@ import { basename, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { deepEqualJson, settingsNamespace } from '@deepseek-ai/dsh-settings'
 import { atomicWriteJson, readConfigRaw } from '../../plugin-kit/src/host/hot-reload-store.ts'
 import { parseEditorConfig } from './config.ts'
 import { NS } from './ns.ts'
 import { FileEditorFs } from './remote/index.ts'
+
+/** Deep JSON equality used to echo-guard the commit watcher against self-writes. */
+function deepEqualJson(a: unknown, b: unknown): boolean {
+  if (a === b) return true
+  if (typeof a !== typeof b) return false
+  if (a === null || b === null) return false
+  if (typeof a !== 'object') return false
+  const ra = a as Record<string, unknown>
+  const rb = b as Record<string, unknown>
+  const ka = Object.keys(ra).sort()
+  const kb = Object.keys(rb).sort()
+  if (ka.length !== kb.length) return false
+  for (let i = 0; i < ka.length; i++) {
+    if (ka[i] !== kb[i]) return false
+    if (!deepEqualJson(ra[ka[i]!], rb[kb[i]!])) return false
+  }
+  return true
+}
 
 /** Plugin short name (also the loader entry id). */
 export const name = 'web-file-editor'
@@ -29,7 +46,9 @@ export interface EditorHostConfig {
   configFile?: string
 }
 
-export const Config = {}
+export const Config: z<EditorHostConfig> = z.object({
+  configFile: z.string().default(''),
+})
 
 /** Schemastery mirror of the editor config — the schema judges what this serves. */
 export const EditorSettingsSchema: z<Record<string, unknown>> = z.object({
@@ -41,7 +60,9 @@ function message(error: unknown): string {
 }
 
 function resolveFilePath(config: EditorHostConfig): string {
-  if (config.configFile !== undefined) return resolve(process.cwd(), config.configFile)
+  if (config.configFile !== undefined && config.configFile !== '') {
+    return resolve(process.cwd(), config.configFile)
+  }
   const here = fileURLToPath(import.meta.url)
   return resolve(dirname(here), '..', '..', 'file-editor-config.json')
 }
@@ -55,7 +76,7 @@ export function apply(ctx: Context, config: EditorHostConfig = {}): void {
   const filePath = resolveFilePath(config)
   ctx.inject(['settings'], (sctx) => {
     const initial = readConfigRaw(filePath)
-    const scope = sctx.settings.register(settingsNamespace(NS), EditorSettingsSchema, {
+    const scope = sctx.settings.register(NS, EditorSettingsSchema, {
       applies: 'live',
       // The schema cannot express unknown-key refusal, so the shared
       // validator judges every candidate write (delegation over re-claim).

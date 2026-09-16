@@ -71,7 +71,12 @@ const WANTED = [
   ['dsh-llm', true], ['dsh-session', true], ['dsh-token-meter', true], ['dsh-agent', true],
   ['dsh-commands', true], ['dsh-settings', true], ['dsh-settings-file', true],
   ['dsh-client-ui-slots', true], ['dsh-client-ui-settings', true], ['dsh-client-ui-settings-plugins', true],
-  ['dsh-client-runtime', true],
+  // dsh-client-runtime was removed in DSH 0.1.6-alpha.1 (packages/client/runtime
+  // deleted; SettingsScope moved to dsh-client-ui-settings/client, SnapshotStore
+  // to dsh-client-store, ClientContext = plain cordis Context). Optional so the
+  // farm builds against both pre- and post-0.1.6 checkouts; plugins must import
+  // its types only (erased at runtime).
+  ['dsh-client-runtime', false],
   ['dsh-client-store', false], ['dsh-client-locale', true], ['dsh-client-ui-renderer', false],
   ['dsh-workspace', true],
 ]
@@ -81,7 +86,11 @@ const NPM_DEPS = [
   { name: 'react', from: 'packages/client/ui-settings-plugins' },
   { name: '@types/react', from: 'packages/client/ui-settings-plugins' },
   { name: '@types/node', from: '' },
-  { name: 'monaco-editor', from: '' },
+  // Build-time dep of the web-file-editor client bundle only (no vitest test
+  // imports the monaco-bearing module). The 0.1.6-alpha.1 checkout does not
+  // install it (the two older checkouts carry it as a user-approved root
+  // devDependency); skipping keeps the farm buildable there.
+  { name: 'monaco-editor', from: '', optional: true },
 ]
 
 /** Root dev tools used directly from this workspace. */
@@ -135,9 +144,14 @@ function resolvePkg(name, cwd) {
   if (!existsSync(join(dir, 'package.json'))) throw new Error('cannot locate package root for ' + name)
   return dir
 }
-for (const { name, from } of NPM_DEPS) {
+for (const { name, from, optional } of NPM_DEPS) {
   if (!existsSync(join(FORK, from))) { console.log(name + ' -> (consumer absent; skipped)'); continue }
-  linkRoot(name, resolvePkg(name, join(FORK, from)))
+  try {
+    linkRoot(name, resolvePkg(name, join(FORK, from)))
+  } catch (error) {
+    if (optional) { console.log(name + ' -> (absent in target; skipped)'); continue }
+    throw error
+  }
 }
 for (const name of ROOT_TOOLS) linkRoot(name, resolvePkg(name, FORK))
 console.log('link complete')

@@ -5,7 +5,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { LlmRuntime } from '@deepseek-ai/dsh-llm'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import type { CommandInvocation, CommandResult } from '@deepseek-ai/dsh-commands'
+import { CommandId } from '@deepseek-ai/dsh-commands/brand'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import HandoffCompactionEngine from '../../compaction-handoff/src/index.ts'
 import { apply } from '../src/index.ts'
@@ -35,6 +37,7 @@ function setup(fileConfig: Record<string, unknown>): {
   writeFileSync(configFile, JSON.stringify(fileConfig))
   const realCtx = new Context()
   void new LlmRuntime(realCtx)
+  void new SessionProjectionRegistry(realCtx)
   void new TokenMeter(realCtx)
   const engineInstance = new HandoffCompactionEngine(realCtx, { configFile })
   engines.push(engineInstance)
@@ -56,12 +59,15 @@ function setup(fileConfig: Record<string, unknown>): {
 }
 
 function invocation(rawInput: string): CommandInvocation {
+  // The runtime enriches the invocation with attachments and a branded
+  // commandId; the handler under test reads only rawInput/agent/signal.
   return {
     agent: { session: { id: 'sess-x', requestHeader: () => undefined }, options: {} } as never as Agent,
     signal: new AbortController().signal,
-    commandId: 'test-command' as never,
+    commandId: CommandId('test-command'),
     rawInput,
-  } as CommandInvocation
+    attachments: [],
+  } as never as CommandInvocation
 }
 
 describe('/compact-config handler', () => {

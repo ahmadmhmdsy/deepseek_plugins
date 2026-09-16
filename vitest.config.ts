@@ -54,7 +54,7 @@ const WORKSPACE_PACKAGES = [
   'cordis', 'cordis-plugin-include', 'cordis-plugin-loader', 'schemastery', 'cosmokit',
   'dsh-compaction', 'dsh-compaction-basic', 'dsh-compaction-tool-result-pruner',
   'dsh-llm', 'dsh-session', 'dsh-token-meter', 'dsh-agent', 'dsh-commands',
-  'dsh-settings', 'dsh-settings-file', 'dsh-client-runtime', 'dsh-client-ui-slots', 'dsh-client-ui-settings',
+  'dsh-settings', 'dsh-settings-file', 'dsh-session-projection', 'dsh-util-values', 'dsh-client-ui-slots', 'dsh-client-ui-settings',
   'dsh-client-ui-settings-plugins', 'dsh-client-store', 'dsh-client-locale',
   'dsh-client-ui-renderer', 'dsh-workspace',
 ]

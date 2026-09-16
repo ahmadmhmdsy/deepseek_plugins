@@ -42,7 +42,10 @@ export function renderConversation(input: SummarizationInput, header: ArchiveHea
 }
 
 function renderMessage(message: Message): string[] {
-  const role = message.role === 'tool' ? 'tool' : message.role
+  // A tool result projects as a 'user' message carrying a tool-result block in
+  // both harness lineages; surface it with an explicit tool header instead.
+  const toolResult = message.content.some(block => block.type === 'tool-result')
+  const role = toolResult ? 'tool' : message.role
   const lines = ['## ' + role, '']
   for (const block of message.content) lines.push(...renderBlock(block))
   lines.push('')

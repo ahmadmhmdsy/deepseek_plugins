@@ -11,12 +11,20 @@
  * @module compaction-handoff/store
  */
 import type { Context } from '@deepseek-ai/cordis'
-import { deepFreeze } from '@deepseek-ai/dsh-llm'
 import { parseHandoffConfig } from './config.ts'
 import type { ResolvedHandoffConfig } from './types.ts'
 import {
   HotReloadStore, atomicWriteJson as kitAtomicWriteJson, readConfigRaw as kitReadConfigRaw,
 } from '../../plugin-kit/src/host/hot-reload-store.ts'
+
+/** Recursively freeze a JSON-shaped value so callers cannot mutate the parsed store. */
+function deepFreeze<T>(value: T): T {
+  if (value === null || typeof value !== 'object') return value
+  const record = value as Record<string, unknown>
+  Object.freeze(record)
+  for (const key of Object.keys(record)) deepFreeze(record[key])
+  return value
+}
 
 /** Read the raw JSON document of the config file, or undefined when absent. */
 export function readConfigRaw(filePath: string): unknown {

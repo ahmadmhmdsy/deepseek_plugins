@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import * as dshLlm from '@deepseek-ai/dsh-llm'
 import { createUserMessage, createMessage, createToolResultMessage } from '@deepseek-ai/dsh-llm'
 import type { SummarizationInput } from '@deepseek-ai/dsh-compaction-basic/src/summarizer.ts'
+import type { ToolCallId } from '@deepseek-ai/dsh-llm'
 import {
   ensureGitExclude, nextArchiveName, renderConversation, renderPointerText, writeArchive,
 } from '../src/archive.ts'
@@ -19,12 +20,13 @@ function tempRoot(): string {
 
 // The call-id brand was renamed across DSH checkouts (public: CallId, dev
 // fork: ToolCallId); both brand a plain string at runtime.
-const callIdBrand = dshLlm as unknown as { CallId?: (id: string) => string; ToolCallId?: (id: string) => string }
-const brandCallId = callIdBrand.ToolCallId ?? callIdBrand.CallId
+// New release carries the ToolCallId brand; the older checkouts use CallId (rename drift).
+type CallIdBrand = (id: string) => ToolCallId
+const callIdBrand = dshLlm as unknown as { CallId?: CallIdBrand; ToolCallId?: CallIdBrand }
+const brandCallId: CallIdBrand = callIdBrand.ToolCallId ?? callIdBrand.CallId!
 function input(): SummarizationInput {
   const callId = brandCallId!('call-1')
   return {
-    system: 'You are a helpful assistant.',
     messages: [
       createUserMessage({ content: [{ type: 'text', text: 'user question' }], source: { kind: 'user' } }),
       createMessage({

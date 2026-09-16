@@ -6,6 +6,7 @@
 **Revised:** 2026-09-14 — new front opened: File Editor (Monaco) client plugin (§8f; plan docs/superpowers/plans/2026-09-14-file-editor-plugin.md)
 **Revised:** 2026-09-15 — FE-M-A Task 3 host HALF landed (FileEditorFs Remote service + policy engine, TASKS FE-M-A Task 3b holds the client remainder)
 **Revised:** 2026-09-15 — compat audit vs DSH release 0.1.6-alpha.1 (`D:\deepseek-harness_2`): NOT compatible as-is — 21/135 tests fail, 15 tsc errors over 8 plugin files; drift pinned and recorded in docs/incidents/2026-09-15-dsh-0.1.6-alpha.1-compatibility-contrast.md (settingsNamespace removed; dsh-client-runtime gone; TokenMeter→session-projection dep; TokenMeasurement/SummarizationInput/RegionDependencies/Message-role drift; monaco absent). Unity fix list inside.
+**Revised:** 2026-09-15 — COMPAT-1 COMPLETE: suite fully green on `D:\deepseek-harness_2` (135/135 vitest, 0 tsc errors, bundles rebuilt, `--dump-config` exit 0). Target-lock now `D:\deepseek-harness_2` only; old checkouts dropped where conflicting, FE-M-A Task 6 superseded by the native file preview (user decision). See §8h and docs/incidents/2026-09-15-dsh-0.1.6-alpha.1-compatibility-contrast.md.
 **Purpose:** everything a fresh-context agent needs to resume Tasks 11-14 of the
 approved implementation plan without re-deriving anything.
 
@@ -575,6 +576,23 @@ default hiding.
 - NEXT: user boots the harness (their checkpoint) and confirms the Editor tab;
   then FE-M-A Task 2 = settings enable/disable + lazy-tree host fs service
   + workbench replaces the placeholder.
+
+## 8h. COMPAT-1 — port to DSH 0.1.6-alpha.1 `D:\deepseek-harness_2` (CONCLUDED 2026-09-15)
+
+User decisions (authoritative):`target-lock = D:\deepseek-harness_2 only`; old checkouts (RUN rc.7, DEV fork) dropped where in conflict. FE-M-A Task 6 (chat-click→editor) is SUPERSEDED by the native file preview (files open in the built-in viewer/editor straight from chat clicks in the new release) — recorded as done-in-target, plugin work not required.
+
+Final state (all evidence 2026-09-15):
+- vitest via `D:/deepseek-harness_2/node_modules/.bin/vitest.CMD`: **19 files / 135 tests PASS**.
+- tsc over the regenerated facade tsconfig.json: **0 errors** (previous vendor-noise class included; the earlier "ui-slots TS2305" flare also cleared).
+- tsdown client bundles rebuilt for `web-compact-config` + `web-file-editor` (exit 0).
+- Composition check (cwd `D:/deepseek-harness_2`): `--dump-config` **exit 0**, all four plugin rows present.
+
+Key fixes (details in the incident record):
+- `settingsNamespace` removed in release → plain namespace + `ctx.settings.register(NS, …)`; `deepEqualJson` re-sourced from `dsh-util-values`.
+- `dsh-client-runtime` dissolved → `Context` from `@deepseek-ai/cordis`, `SettingsScope`/SnapshotStore from `dsh-client-ui-settings/client`/`dsh-client-store`.
+- TokenMeter now needs session projections → install `SessionProjectionRegistry` BEFORE `TokenMeter`; `TokenMeasurement` imported instead of local MeterMeasurement; `SummarizationInput.system` removed; assistant message records require `stream`; invocation literal needs `commandId`+`attachments`.
+- Static `Config` heal: parent `BasicCompactionEngine.Config` has **no `.concat()`** (runtime TypeError killed whole-file imports) — plugin-level Config declares only `configFile` (engine tuning comes from the config file), so plain `z.object({ configFile: z.string() })`.
+- `recover` callback wired into `compactSurfaceRegion` deps mirroring parent 2026-09-15 body.
 
 ## 9. File inventory (workspace)
 

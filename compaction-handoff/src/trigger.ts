@@ -4,9 +4,17 @@
  *
  * @module compaction-handoff/trigger
  */
-import { deepFreeze } from '@deepseek-ai/dsh-llm'
 import { TargetPressureConfigError } from '@deepseek-ai/dsh-compaction-basic/src/config.ts'
 import type { ModelPreset, ResolvedHandoffConfig } from './types.ts'
+
+/** Recursively freeze a JSON-shaped value so callers cannot mutate the resolved spec. */
+function deepFreeze<T>(value: T): T {
+  if (value === null || typeof value !== 'object') return value
+  const record = value as Record<string, unknown>
+  Object.freeze(record)
+  for (const key of Object.keys(record)) deepFreeze(record[key])
+  return value
+}
 
 /** Fully resolved pressure + retention budget for one routed model. */
 export interface HandoffCompactSpec {

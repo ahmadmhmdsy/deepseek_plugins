@@ -13,7 +13,7 @@
  *
  * @module plugin-kit/client/settings-form
  */
-import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { createSnapshotStoreLike, type SnapshotStoreLike } from './store.ts'
 
 /** Numeric draft text: empty omits the field, a bad value blocks the save. */

@@ -20,6 +20,7 @@ import type { LlmCallConfig } from '@deepseek-ai/dsh-llm'
 import type { CommandId } from '@deepseek-ai/dsh-commands/brand'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { Session } from '@deepseek-ai/dsh-session'
+import type { TokenMeasurement } from '@deepseek-ai/dsh-token-meter'
 import BasicCompactionEngine from '@deepseek-ai/dsh-compaction-basic'
 import { TargetPressureConfigError } from '@deepseek-ai/dsh-compaction-basic/src/config.ts'
 import {
@@ -46,19 +47,16 @@ function routedTarget(session: Session): Pick<LlmCallConfig, 'provider' | 'model
   return { provider: config.provider, model: config.model }
 }
 
-/** Token price of one surface node (both checkout token-meter shapes agree). */
-interface MeterNode {
-  readonly seq: number
-  readonly tokens: number
-}
-interface MeterMeasurement {
-  readonly totalTokens: number
-  readonly nodes: readonly MeterNode[]
-}
 
 export class HandoffCompactionEngine extends BasicCompactionEngine {
   static inject = ['llm', 'tokenMeter', 'sessions']
 
+  // Plugin-level Config declares only the composition option. The engine
+  // tuning fields (thresholdRatio, retain*, summarization*, modelPolicies…)
+  // come from the handoff config file (store), never from the plugin patch, so
+  // no schema composition with the parent's static Config is needed.
+  // NOTE: BasicCompactionEngine.Config has no .concat() in this release
+  // (runtime TypeError) — see docs/incidents compat record.
   static Config: z<HandoffPluginConfig> = z.object({
     configFile: z.string(),
   })
@@ -95,7 +93,7 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
     pluginEnabled: boolean
   } {
     const target = routedTarget(agent.session)
-    const measured = (this.ctx.tokenMeter.measure(agent.session) as MeterMeasurement).totalTokens
+    const measured = this.ctx.tokenMeter.measure(agent.session).totalTokens
     if (target === undefined) {
       return {
         measuredTokens: measured, thresholdTokens: Number.POSITIVE_INFINITY,
@@ -133,7 +131,7 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
     if (preset?.disabled === true) return null
 
     const meter = this.ctx.tokenMeter
-    let measurement = meter.measure(agent.session) as MeterMeasurement
+    let measurement: TokenMeasurement = meter.measure(agent.session)
     const prune = this.ctx.get('toolResultPruner')
 
     // Resolve capacity only when a ratio-based field is in play (spec §5).
@@ -171,7 +169,7 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
     // summary range, then remeasure (mirrors the parent).
     if (prune !== undefined) {
       prune.pruneSession(agent.session)
-      measurement = meter.measure(agent.session) as MeterMeasurement
+      measurement = meter.measure(agent.session)
     }
     if (measurement.totalTokens < spec.thresholdTokens) return null
 
@@ -184,7 +182,7 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
       }
       this.stashSpanTokens(agent, measurement, range.start, range.end)
       result = await this.compactRegion(range.start, range.end, agent, signal)
-      measurement = meter.measure(agent.session) as MeterMeasurement
+      measurement = meter.measure(agent.session)
       if (measurement.totalTokens < spec.thresholdTokens) return result
     }
 
@@ -198,7 +196,7 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
   /** Priced tokens of the [start, end] span, remembered for the archive header. */
   private stashSpanTokens(
     agent: Agent,
-    measurement: MeterMeasurement,
+    measurement: TokenMeasurement,
     start: number,
     end: number,
   ): void {
@@ -243,7 +241,7 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
         const operationSignal = AbortSignal.any([agentSignal, signal])
         try {
           operationSignal.throwIfAborted()
-          const measurement = this.ctx.tokenMeter.measure(agent.session) as MeterMeasurement
+          const measurement: TokenMeasurement = this.ctx.tokenMeter.measure(agent.session)
           const range = selectCompactableRange(agent.session, measurement, 0)
           if (range === null) return null
           this.stashSpanTokens(agent, measurement, range.start, range.end)
@@ -251,6 +249,12 @@ export class HandoffCompactionEngine extends BasicCompactionEngine {
             {
               meter: this.ctx.tokenMeter,
               summarize: (input, owner, abort) => this.summarize(input, owner, abort),
+              recover: (error, owner, sourceEventSeqs, abort) => this.ctx.waterfall('compaction/summary-error', {
+                session: owner.session,
+                sourceEventSeqs,
+                error,
+                ...abort === undefined ? {} : { signal: abort },
+              }, () => false),
             },
             agent.session,
             range.start,
