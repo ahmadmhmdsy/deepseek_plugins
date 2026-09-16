@@ -108,3 +108,23 @@ The blank-after-reload correctness fix above (the three root causes) is the
 prerequisite for the UX polish milestone
 `docs/superpowers/plans/2026-09-14-file-editor-plugin.md` §M-D (2026-09-16
 14:09). M-D is display-only; it assumes the tab actually renders.
+
+## M-D.1 live verification (2026-09-16 14:14-14:18, agent-owned 3083)
+
+After landing M-D.1 source + bundle, the agent booted an isolated harness on
+**port 3083** (same `D:/deepseek-harness_2` checkout, separate port, own
+store) so the user's live 3080 stayed untouched. Drove it with `agent-browser`.
+
+- Session `UI Reverse Engineering Analysis` (1d) opened → tabs Chat / Trajectory / **Editor** became reachable (the Editor tab renders in this session).
+- Click `Editor` → right pane shows workspace dropdown `deepseek_plugins`, tree root `▶ deepseek_plugins` (workspace title, NOT raw path), empty-state hint `Select a file to read it.` in the content pane.
+- Click tree root → expands to 30 `.editor-tree-row` elements with `▸`/`▾` chevrons, `aria-expanded`, `aria-selected`, `title` tooltip on every row (e.g. `▸ compact-config-command`).
+- Hover/focus-visible rule confirmed in DOM: `<style data-editor-tree-row-styles>` carries `.editor-tree-row:hover:not([aria-selected="true"]){background:rgba(127,127,127,0.08)}.editor-tree-row:focus-visible{outline:2px solid #3b6ef6;outline-offset:-2px}`.
+
+All four Severity-1 fixes from §M-D.1 visually verified:
+
+1. **TOKENS thread-through** — borders use `TOKENS.border` (no more `rgba(127,127,127,0.25)`), content pane uses `TOKENS.disabledBackground`, selection uses `TOKENS.accent` inset stripe.
+2. **Hover + focus-visible** — scoped `<style>` tag is mounted; keyboard focus shows the accent outline.
+3. **Root label** — `▾ deepseek_plugins` (workspace title) instead of the raw path.
+4. **Empty-state hint** — "Select a file to read it." replaces the previous blank.
+
+Agent-owned 3083 was killed at 14:18 (PID 13752, `Stop-Process -Force`); port confirmed free. Live 3080 was never touched; user's Ctrl+F5 checkpoint for M-D.1 on 3080 is unchanged.

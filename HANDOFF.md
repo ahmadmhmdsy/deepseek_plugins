@@ -735,3 +735,39 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
   height budget). TASKS entry FE-M-D `pending`. No code changes in this
   turn — review and plan only; the next session can start M-D.1 (tree
   interaction) when the user signs off.
+
+### 2026-09-16 14:14-14:18 — M-D.1 (Severity 1 tree interaction) implemented + visually verified
+- **Edit**: `web-file-editor/src/client/EditorView.tsx` (+92/-15): import
+  `TOKENS` from `plugin-kit/src/client/chrome.tsx`; thread tokens into border,
+  content-pane bg, selection stripe, error banner, and root label; add
+  scoped `<style data-editor-tree-row-styles>` for hover + focus-visible;
+  rewrite `Entries` to render loading/error/empty as separate states
+  (banner above entries, `(empty directory)` row when `!loading && !error`,
+  `role=group` on container, `aria-expanded`/`aria-selected`/`title` on every
+  row). Bundle rebuild via `tsdown -c tsdown.config.ts` (lib gitignored):
+  `web-file-editor/lib/client.js` 8,711,187 bytes.
+- **Tests**: 31/31 editor unit tests PASS (`vitest run web-file-editor`).
+- **Visual verification** (agent-owned isolated harness on **port 3083**,
+  same `D:/deepseek-harness_2` checkout, separate store; user's live 3080
+  was NOT touched). Drove with `agent-browser` CLI:
+  - Session `UI Reverse Engineering Analysis` (1d) opened → Chat / Trajectory /
+    **Editor** tabs visible.
+  - Click `Editor` → workspace dropdown `deepseek_plugins` (the workspace
+    title, not the raw path), tree root `▶ deepseek_plugins`, content pane
+    shows the `Select a file to read it.` empty-state hint.
+  - Click root → 30 `.editor-tree-row` children with chevrons, ARIA attrs,
+    and per-row `title` tooltip.
+  - Hover/focus-visible style tag confirmed in DOM
+    (`<style data-editor-tree-row-styles>` carries the rule).
+- **Cleanup**: PID 13752 (`--port 3083`) killed at 14:18; port 3083 confirmed
+  free; live 3080 untouched.
+- **State**: TASKS FE-M-D-1 `done`; FE-M-D-2..8 still `pending` behind user
+  sign-off on M-D.1. Risk register R1 + R2 unchanged (openView contract +
+  Monaco theme still gate M-D.6 + M-D.7 respectively).
+- **Caveat (honest)**: visual confirmation ran on the agent-owned 3083, not
+  the user's 3080. User's Ctrl+F5 checkpoint per
+  `creating-a-client-card-plugin.md` §5.3 stands for M-D.1 on 3080.
+- **Untouched**: `file-editor-config.json` + `handoff-config.json` show
+  harness-runtime edits (3083 boot toggled `file-editor.enabled=false` and
+  rewrote `handoff.trigger.tokens=100000`); NOT committed by me — leave for
+  the user's review.

@@ -15,6 +15,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { EditorFsFace, FsEntryWire, FsReadResult } from './fs-remote.ts'
 import { createReadonlyWorkbench, languageForPath, type WorkbenchHandle } from './workbench.ts'
+import { TOKENS } from '../../../plugin-kit/src/client/chrome.tsx'
 
 /**
  * Snapshot selector hook the slot renderer binds to the inject face's
@@ -67,27 +68,54 @@ const treePaneStyle: CSSProperties = {
 }
 const treeScrollStyle: CSSProperties = {
   overflowY: 'auto', overflowX: 'hidden', minWidth: 0,
-  borderInlineEnd: '1px solid rgba(127,127,127,0.25)', paddingInlineEnd: 8,
+  borderInlineEnd: '1px solid ' + TOKENS.border, paddingInlineEnd: 8,
 }
 const contentStyle: CSSProperties = {
   flex: '1 1 auto', minWidth: 320, overflow: 'auto',
-  background: 'rgba(127,127,127,0.07)', borderRadius: 6, padding: 8,
+  background: TOKENS.disabledBackground, borderRadius: 6, padding: 8,
 }
 const rowStyle: CSSProperties = {
   display: 'block', width: '100%', cursor: 'pointer', padding: '2px 6px',
   borderRadius: 4, overflowWrap: 'anywhere', textAlign: 'start',
   border: 'none', background: 'transparent', font: 'inherit', fontSize: 13,
+  transition: 'background-color 120ms ease',
 }
-const rowSelectedStyle: CSSProperties = { ...rowStyle, background: 'rgba(127,127,127,0.18)' }
+const rowSelectedStyle: CSSProperties = {
+  ...rowStyle,
+  background: 'rgba(127,127,127,0.18)',
+  boxShadow: 'inset 2px 0 0 ' + TOKENS.accent,
+}
 const titleStyle: CSSProperties = { fontSize: 15, fontWeight: 600, margin: 0 }
 const hintStyle: CSSProperties = { fontSize: 12, opacity: 0.7, margin: 0 }
 const preStyle: CSSProperties = {
   fontSize: 12.5, margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, monospace', lineHeight: 1.5,
 }
-const errorStyle: CSSProperties = { fontSize: 13, color: '#b91c1c', margin: 0 }
+const errorStyle: CSSProperties = {
+  fontSize: 13,
+  color: TOKENS.danger,
+  background: TOKENS.dangerSoft,
+  border: '1px solid ' + TOKENS.danger,
+  borderRadius: 6,
+  padding: '7px 10px',
+  margin: '6px 0',
+  lineHeight: 1.45,
+}
+const emptyHintStyle: CSSProperties = {
+  fontSize: 12, color: TOKENS.textMuted, padding: '2px 6px 2px 24px',
+}
 
 const COLLAPSED = String.fromCharCode(0x25b8) + ' '
 const EXPANDED = String.fromCharCode(0x25be) + ' '
+
+/**
+ * Hover/focus-visible style for tree rows. Inline styles cannot express
+ * `:hover` / `:focus-visible` pseudo-classes; install a tiny scoped rule
+ * exactly once per Editor mount. Class `editor-tree-row` is unique enough
+ * that the rule cannot leak into other plugin rows.
+ */
+const TREE_ROW_HOVER_RULE =
+  '.editor-tree-row:hover:not([aria-selected="true"]){background:rgba(127,127,127,0.08)}' +
+  '.editor-tree-row:focus-visible{outline:2px solid ' + TOKENS.accent + ';outline-offset:-2px}'
 
 function dirKey(workspaceId: string, relDir: string): string {
   return workspaceId + '#' + relDir
@@ -110,6 +138,16 @@ export function EditorView(props: ConvViewProps & EditorViewProps): JSX.Element 
   const [workspaceId, setWorkspaceId] = useState<string | null>(() => workspaces?.[0]?.workspaceId ?? null)
   const [dirs, setDirs] = useState<Record<string, DirState>>({})
   const [file, setFile] = useState<{ readonly relPath: string; readonly state: FileUiState } | undefined>(undefined)
+
+  // Install the tree-row hover/focus rule once per mount. Inline styles
+  // cannot express pseudo-classes, so this is the kit-consistent way.
+  useEffect(() => {
+    const style = document.createElement('style')
+    style.setAttribute('data-editor-tree-row-styles', '1')
+    style.textContent = TREE_ROW_HOVER_RULE
+    document.head.appendChild(style)
+    return () => { style.remove() }
+  }, [])
 
   const effectiveWorkspace = workspaceId ?? workspaces?.[0]?.workspaceId ?? null
 
@@ -161,7 +199,8 @@ export function EditorView(props: ConvViewProps & EditorViewProps): JSX.Element 
         </select>
         <div style={treeScrollStyle}>
           <DirButton
-            label={(effectiveWorkspace ? workspaces.find(w => w.workspaceId === effectiveWorkspace)?.path : undefined) ?? ''}
+            label={workspaces.find(w => w.workspaceId === effectiveWorkspace)?.title ?? ''}
+            title={workspaces.find(w => w.workspaceId === effectiveWorkspace)?.path ?? ''}
             collapsed={dirs[dirKey(effectiveWorkspace, '')]?.expanded !== true}
             onClick={() => { toggleDir(effectiveWorkspace, '') }}
           />
@@ -221,9 +260,15 @@ function ContentPane(props: { relPath: string; size: number; content: string }):
 }
 
 /** One directory chevron row. */
-function DirButton(props: { label: string; collapsed: boolean; onClick(): void }): JSX.Element {
+function DirButton(props: { label: string; title: string; collapsed: boolean; onClick(): void }): JSX.Element {
   return (
-    <button style={props.collapsed ? rowStyle : rowSelectedStyle} onClick={props.onClick}>
+    <button
+      className='editor-tree-row'
+      title={props.title !== '' ? props.title : props.label}
+      style={props.collapsed ? rowStyle : rowSelectedStyle}
+      aria-expanded={!props.collapsed}
+      onClick={props.onClick}
+    >
       {props.collapsed ? COLLAPSED : EXPANDED}
       {props.label}
     </button>
@@ -241,37 +286,58 @@ function Entries(props: {
   openFile(workspaceId: string, relPath: string): void
 }): JSX.Element {
   const state = props.dirs[dirKey(props.workspaceId, props.relDir)]
-  if (state.loading) return <p style={hintStyle}>Loading &#8230;</p>
-  if (state.error !== undefined) return <p style={errorStyle}>{state.error}</p>
+  const entries = state?.entries ?? []
+  const loading = state?.loading === true
+  const error = state?.error
+  const isEmpty = !loading && error === undefined && entries.length === 0
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, paddingInlineStart: 10 }}>
-      {state.entries.map(entry => {
+    <div
+      style={{ display: 'flex', flexDirection: 'column', gap: 1, paddingInlineStart: 10 }}
+      role='group'
+    >
+      {error !== undefined && error !== '' ? <p style={errorStyle}>{error}</p> : null}
+      {entries.map(entry => {
         const childRel = props.relDir === '' ? entry.name : props.relDir + '/' + entry.name
         const childKey = dirKey(props.workspaceId, childRel)
         if (entry.kind === 'directory') {
           const expanded = props.dirs[childKey]?.expanded === true
           return (
             <div key={childRel}>
-              <button style={rowStyle} onClick={() => { props.toggleDir(props.workspaceId, childRel) }}>
+              <button
+                className='editor-tree-row'
+                title={childRel}
+                style={rowStyle}
+                aria-expanded={expanded}
+                onClick={() => { props.toggleDir(props.workspaceId, childRel) }}
+              >
                 {expanded ? EXPANDED : COLLAPSED}
                 {entry.name}
               </button>
               {expanded && props.depth < 48 && (
                 <Entries {...props} relDir={childRel} depth={props.depth + 1} />
               )}
+              {expanded && props.depth >= 48 && (
+                <p style={emptyHintStyle}>(deeper levels not shown — open the file directly)</p>
+              )}
             </div>
           )
         }
+        const isSelected = props.selectedRelPath === childRel
         return (
           <button
             key={childRel}
-            style={props.selectedRelPath === childRel ? rowSelectedStyle : rowStyle}
+            className='editor-tree-row'
+            title={childRel}
+            aria-selected={isSelected}
+            style={isSelected ? rowSelectedStyle : rowStyle}
             onClick={() => { props.openFile(props.workspaceId, childRel) }}
           >
             {entry.name}
           </button>
         )
       })}
+      {loading && entries.length === 0 ? <p style={hintStyle}>Loading &#8230;</p> : null}
+      {isEmpty ? <p style={emptyHintStyle}>(empty directory)</p> : null}
     </div>
   )
 }

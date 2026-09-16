@@ -4,7 +4,7 @@ TASKS.md owns the **live status**; [HANDOFF.md](./HANDOFF.md) owns the narrative
 and evidence; the plan (`docs/superpowers/plans/2026-09-10-auto-compact-handoff.md`)
 owns the approved task definitions.
 
-**Last updated:** 2026-09-16 · **Active front:** Editor tab mount fix (FE-M-A) · live GUI re-check is the user checkpoint.
+**Last updated:** 2026-09-16 14:18 · **Active front:** Editor UX polish — M-D.1 done, M-D.2..8 pending user sign-off · live 3080 Ctrl+F5 = remaining M-D.1 visual checkpoint.
 
 ## File Editor plugin (Queued — direction approved 2026-09-14, plan: docs/superpowers/plans/2026-09-14-file-editor-plugin.md)
 
@@ -123,15 +123,35 @@ Next plugin-kit step: the next real plugin consumes the kit (see
   Record: docs/incidents/2026-09-16-editor-tab-still-mounting-inject-cache.md
   follow-up. Live 3080 re-verify remains a user checkpoint (Ctrl+F5).
 
-- **Task FE-M-D — Editor tab UX polish (UX review milestone)** `pending`
-  (2026-09-16 14:09) — milestone added to the file-editor plan in
-  `docs/superpowers/plans/2026-09-14-file-editor-plugin.md` §M-D after the
-  thorough UI/UX review. Eight sub-batches (M-D.1 … M-D.7) plus a parked list
-  for M-E (search, copy-path, recent files). Display-only; no data-plane
-  changes. Acceptance: 31/31 editor tests still green, tsdown rebuild green,
-  user-checks-the-live-3080 visual confirmation. Risks R1–R4 documented in the
-  plan (openView contract, theme seam, focus trap, row height budget).
-  Record (review): see HANDOFF §post-COMPAT-1 entry of 2026-09-16 14:09.
+- **Task FE-M-D — Editor tab UX polish (UX review milestone)** `in_progress`
+  (2026-09-16 14:09; **M-D.1 done 2026-09-16 14:18**) — milestone added to the
+  file-editor plan in `docs/superpowers/plans/2026-09-14-file-editor-plugin.md`
+  §M-D after the thorough UI/UX review. Eight sub-batches (M-D.1 … M-D.7)
+  plus a parked list for M-E (search, copy-path, recent files). Display-only;
+  no data-plane changes. Acceptance: 31/31 editor tests still green, tsdown
+  rebuild green, user-checks-the-live-3080 visual confirmation. Risks R1–R4
+  documented in the plan (openView contract, theme seam, focus trap, row
+  height budget).
+  - [x] **FE-M-D.1** — tree interaction (Severity 1, 4 fixes + row title
+    tooltip): import `TOKENS` from `plugin-kit/src/client/chrome.tsx`;
+    thread into border/content-pane bg/selection stripe/error banner;
+    scoped `<style data-editor-tree-row-styles>` for `.editor-tree-row:hover`
+    (non-selected) and `:focus-visible` accent outline; rewrite `Entries`
+    with separate `loading` / `error` / `(empty directory)` states (error
+    banner above entries, `role=group` on container, `aria-expanded`,
+    `aria-selected`, `title` on every row); root label shows workspace
+    **title** instead of the raw path. Bundle 8,711,187 bytes; 31/31 editor
+    tests PASS; agent-owned 3083 visual confirm (Editor tab → workspace
+    dropdown → tree expand → hover/focus style tag in DOM → empty-state
+    hint); user's live 3080 Ctrl+F5 = remaining checkpoint.
+  - [ ] FE-M-D.2 — breadcrumb of relative path above the tree header.
+  - [ ] FE-M-D.3 — keyboard nav (Arrow / Home / End / Enter / Space).
+  - [ ] FE-M-D.4 — identity placeholder + per-row metadata (size, mtime).
+  - [ ] FE-M-D.5 — content-pane flex + Monaco flex + 13px fontSize +
+    indent guides + kit `Select` shell.
+  - [ ] FE-M-D.6 — accent pill tone + `Open Editor tab` button (gated by R1).
+  - [ ] FE-M-D.7 — Monaco theme awareness (gated by R2 spike).
+  - [ ] FE-M-D.8 — Read-only pill in header.
 
 ## Backlog / parked (out-of-scope ideas; do not expand current tasks into these)
 
