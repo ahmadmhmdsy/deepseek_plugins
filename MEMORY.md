@@ -267,3 +267,15 @@ agent-browser eval 'document.querySelectorAll(".editor-tree-row").length + "|" +
 - `length > 0` AND style absent → impossible (rows imply the style tag from `useEffect` ran).
 
 This check is **cheaper and more reliable than visual inspection** because the slot renderer's error suppression makes a screenshot indistinguishable from a working mount.
+
+### L-4: Directory stats.size is the inode, not the content (2026-09-16, M-D.3 mid-flight fix)
+
+`statSync(absDir).size` on a directory returns 0 (or the directory inode size on Unix, e.g. 4096) — it is **not** the sum of children. When showing metadata in a file tree:
+
+- **Directories** must NOT display their raw `stats.size` — it is meaningless to the user. Show em-dash (`\u2014`), blank, or "(dir)".
+- **Files** should display `stats.size` as-is (formatted with B/KB/MB).
+
+If the design ever wants "folder size", that needs a separate `getDirectorySize()` recursive scan — do not derive it from `stats.size`. Cross-platform behaviour differs (Windows typically 0; POSIX typically 4096 for empty dirs).
+
+
+---

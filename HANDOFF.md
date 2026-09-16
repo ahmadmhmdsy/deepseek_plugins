@@ -737,6 +737,32 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
   interaction) when the user signs off.
 
 
+### 2026-09-16 14:36-14:43 — M-D.3 (Severity 2 row metadata) implemented + visually verified
+
+**Issue.** Plan §M-D.3: per-row kind glyph + size + mtime columns were missing — the Editor view was throwing away `FsEntryWire.size` and `FsEntryWire.modifiedMs` even though both are already on the wire (verified in `src/remote/policy.ts` `listEntries` L20-41). Without metadata, the file tree gives users no hint about file recency or size, which is the same affordance every native file manager / VS Code Explorer / sidebar-files has — the editor felt primitive in comparison.
+
+**Fix.** Commit `c5fe864`:
+- 5-column grid: chevron (18px) | glyph (18px) | name (1fr, ellipsis) | size (auto, right-aligned, tabular-nums) | mtime (auto, tabular-nums).
+- 14x14 inline-SVG glyphs (folder / file) — kit has no icon pack, so path strings only; aria-hidden on both.
+- `formatSize(n)`: B / KB (1dp < 10KB, 0dp ≥ 10KB) / MB / GB. Pure helper.
+- `formatRelativeTime(ms, now)`: just now / N min ago / N hr ago / N days ago / 'Mon D' short date beyond 30d. Pure helper.
+- Title tooltip now includes `'rel/path (14 KB, modified 2 days ago)'` so screen readers and hover users get the metadata without parsing the grid.
+- Pane width 300→340px + combobox maxWidth 288→328 to fit two trailing meta columns without truncating names.
+
+**Mid-flight issue + fix.** First commit attempt showed `0 B` for every directory — misleading because `stats.size` on a directory is the inode size, not the content sum (and on Windows may be 0). Switched directory rows to display em-dash (`\u2014`) in the size column. Files still show actual size. Rebuilt + reverified.
+
+**Evidence.**
+- Bundle: tsdown clean, 8.73 MB. Tsc exit 0. Vitest 135/135 PASS.
+- Agent-owned harness 3083 with UI Reverse Engineering Analysis session. Tree root expanded (data-editor-row-index=0). `.live-test/editor-md3.png` (raw, dirs show `0 B`); `.live-test/editor-md3-dash.png` (after em-dash fix). All 12 directory rows show em-dash + relative mtime; all visible file rows show file SVG + KB size + relative mtime. `web-file-editor` row shows `just now` (correct — just modified).
+- Token X_zy3w384Oz1VlutqvbhPOVHhF2EG1ilW3pi41m33tQ; harness killed cleanly (PID 27248); port 3083 free.
+
+**Caveats.**
+- formatRelativeTime recomputes `Date.now()` on every render. Acceptable for now (max ~20 rows visible), but if the tree grows, the times will jump as users scroll. If that bothers anyone, move to a per-second tick via useEffect + setInterval. NOT in M-D.3 scope.
+- Glyphs are static fill color (`currentColor`, dimmed via `TOKENS.textMuted`). Dark theme gets the right tone automatically; if the kit ever ships an accent-tint variant, wire it via a `TOKENS.iconFolder` / `TOKENS.iconFile` later.
+- Title tooltip does not localize. Fine for now.
+
+**Native file preview.** Answered separately: M-D.3 did not use/benefit the native file preview. `'file'` (native) and `'editor'` (this plugin) are distinct `conversation.view` slot-entry ids; EditorView `viewRequest/openView/completeViewRequest` mentions = 0. Editor's read path stays on its own `fs.read()` → Monaco pane.
+
 ### 2026-09-16 14:20-14:35 — M-D.2 (Severity 1 navigation primitives) implemented + visually verified
 
 **Issue surfaced during verify.** M-D.2 implementation produced a first bundle that referenced a phantom `onTreeKeyDownStatic` identifier that was not defined anywhere in the source; one of my replace ops removed one occurrence but missed a second because the surrounding line indent differed between the dir-row and file-row JSX. The browser threw `ReferenceError: onTreeKeyDownStatic is not defined` inside the `conversation.view` slot entry — the slot renderer caught it and rendered the Editor tab as an empty fragment, which on the agent-owned harness made the underlying Chat-tab composer bleed through. Same shape as the original incident (blank tab). **Root cause was incomplete removal during a string-substitution pass**, not a new failure mode. **Fix**: direct substring `s.replace("onKeyDown={onTreeKeyDownStatic}", "")` to catch every occurrence; the bubbling-on-tree-container pattern means rows need no per-element keyboard handler. After fix, EditorView mounts cleanly, tree renders, breadcrumb populates, keyboard nav works.

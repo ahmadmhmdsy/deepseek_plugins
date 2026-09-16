@@ -137,3 +137,22 @@ All four Severity-1 fixes from §M-D.1 visually verified:
 4. **Empty-state hint** — "Select a file to read it." replaces the previous blank.
 
 Agent-owned 3083 was killed at 14:18 (PID 13752, `Stop-Process -Force`); port confirmed free. Live 3080 was never touched; user's Ctrl+F5 checkpoint for M-D.1 on 3080 is unchanged.
+
+
+## M-D.3 live verification (2026-09-16 14:36-14:43, agent-owned 3083)
+
+**Scope.** Plan §M-D.3: per-row kind glyph + size + mtime columns. Both `FsEntryWire.size` and `FsEntryWire.modifiedMs` are already on the wire (verified in `src/remote/policy.ts` `listEntries` L20-41) — the view was discarding them.
+
+**Mid-flight issue.** First screenshot showed `0 B` for every directory. Root cause: `statSync(absDir).size` returns 0 on Windows directories (the inode size, not content sum). Misleading because users read it as "this folder contains 0 bytes of files". Fix: switched directory rows to em-dash (`\u2014`); files keep formatted bytes. Rebuilt + reverified (see `.live-test/editor-md3-dash.png`).
+
+**Evidence.**
+- Commit `c5fe864`. Bundle 8.73 MB clean. Tsc exit 0. Vitest 135/135 PASS.
+- UI Reverse Engineering Analysis session on isolated harness 3083 (token X_zy3w384Oz1VlutqvbhPOVHhF2EG1ilW3pi41m33tQ). Tree root expanded via `.editor-tree-row[data-editor-row-index="0"].click()`. Two screenshots: `.live-test/editor-md3.png` (pre-fix, dirs `0 B`) and `.live-test/editor-md3-dash.png` (post-fix, dirs em-dash).
+- Killed harness cleanly (PID 27248); port 3083 free.
+
+**Caveats / future work.**
+- `formatRelativeTime` recomputes `Date.now()` on every render; tick via `useEffect+setInterval` later if it bothers anyone (not in M-D.3).
+- Glyphs use `currentColor` + `TOKENS.textMuted`; future kit `TOKENS.iconFolder/File` would replace hardcoded fill — not in M-D.3.
+- Title tooltip does not localize; fine for now.
+
+**Cross-ref.** MEMORY `L-4` captures the inode-vs-content trap for future tree-row work.
