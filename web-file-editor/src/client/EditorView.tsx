@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { EditorFsFace, FsEntryWire, FsReadResult } from './fs-remote.ts'
 import { createReadonlyWorkbench, languageForPath, type WorkbenchHandle } from './workbench.ts'
-import { TOKENS } from '../../../plugin-kit/src/client/chrome.tsx'
+import { TOKENS, inputStyle, labelStyle } from '../../../plugin-kit/src/client/chrome.tsx'
 
 /**
  * Snapshot selector hook the slot renderer binds to the inject face's
@@ -481,16 +481,23 @@ export function EditorView(props: ConvViewProps & EditorViewProps): JSX.Element 
   return (
     <div style={containerStyle} data-editor-workspace={workspaces.find(w => w.workspaceId === effectiveWorkspace)?.title}>
       <div style={treePaneStyle}>
-        <select
-          style={{ fontSize: 13, maxWidth: 328 }}
-          value={effectiveWorkspace}
-          onChange={(event) => { setWorkspaceId(event.target.value) }}
-          aria-label="Workspace"
-        >
-          {workspaces.map(workspace => (
-            <option key={workspace.workspaceId} value={workspace.workspaceId}>{workspace.title}</option>
-          ))}
-        </select>
+        {workspaces.length > 1
+          ? (
+              <>
+                <span style={labelStyle}>Workspace</span>
+                <select
+                  style={{ ...inputStyle, width: 328 }}
+                  value={effectiveWorkspace}
+                  onChange={(event) => { setWorkspaceId(event.target.value) }}
+                  aria-label='Workspace'
+                >
+                  {workspaces.map(workspace => (
+                    <option key={workspace.workspaceId} value={workspace.workspaceId}>{workspace.title}</option>
+                  ))}
+                </select>
+              </>
+            )
+          : null}
         <div style={breadcrumbStyle} aria-label='Path'>
           <button
             className='editor-tree-row'

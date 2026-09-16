@@ -25,17 +25,16 @@ export function EditorSettingsCard(props: EditorSettingsCardProps): JSX.Element 
   return (
     <PluginCardShell
       title='File editor'
-      description='The Editor tab: workspace file browser and read-only viewer.'
+      description='Workspace file browser and read-only viewer (Editor tab).'
       disclosureLabel='File editor settings'
-      pill={state.failed ? { tone: 'danger', label: 'save failed' } : { tone: 'neutral', label: state.enabled ? 'enabled' : 'disabled' }}
+      pill={state.failed ? { tone: 'danger', label: 'save failed' } : { tone: state.enabled ? 'accent' : 'neutral', label: state.enabled ? 'enabled' : 'disabled' }}
       switchChecked={state.enabled}
       switchDisabled={state.failed}
       switchTitle='Enable or disable the Editor tab (applies live, no restart)'
       onSwitchToggle={(next) => { props.toggle(next) }}
       body={(
         <div style={{ fontSize: 12, color: TOKENS.textMuted, display: 'grid', gap: 6 }}>
-          <span>The switch mounts or withdraws the Editor tab live: the workspace file browser stays gated by this namespace (file-editor-config.json on the host is the truth; the card only writes its enabled key).</span>
-          <span>Disabled removes the tab and its data-plane remote from the session; nothing editor-related mounts anywhere while the switch is off.</span>
+          <span>The switch mounts or withdraws the Editor tab live; disabled removes the tab and its data-plane remote from the session.</span>
           {state.failed ? <span style={{ color: TOKENS.danger }}>The last write failed — the host refused or is offline. Nothing was lost; try again.</span> : null}
         </div>
       )}
