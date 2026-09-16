@@ -768,6 +768,25 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
 
 **Cross-ref.** MEMORY `L-5` captures the Monaco+flex race for future work.
 
+### 2026-09-16 15:55-16:00 — R5 CLOSED: link-profile-node-modules.mjs lands workspace plugins into $DSH_HOME/profiles/node_modules
+
+**Why this matters.** Prior to R5 closure, every agent-owned 3083 boot from the dev fork succeeded in printing the dsh URL + token, but the cordis-loader could NOT resolve `name: web-file-editor` (or any other workspace plugin) because: (a) the workspace junction farm only handles @-scoped packages; (b) the profile node_modules only links @-scoped packages via the host healer. Live visual verification of EVERY workspace-plugin milestone (M-D, M3 web-compact-config, etc.) was therefore impossible without surgery on the user's profile dir. M-D.6 partial shipped with that verification SKIPPED for this reason.
+
+**The fix — one script: `scripts/link-profile-node-modules.mjs` (new).** Scans every workspace subdir (skips `docs`, `scripts`, `node_modules`, leading-underscore templates, and the deny-list `plugin-kit` + `probe-dsh-resolution`), reads each `package.json` `name` field (so renames stay accurate), then junction-locates the plugin at `$DSH_HOME/profiles/node_modules/<name>` (or `.../node_modules/<scope>/<name>` for @-scoped packages). Idempotent: existing junctions are rm + recreated, not duplicated. Skips with a helpful message if `$DSH_HOME/profiles/node_modules` doesn't exist (fresh machine, no profile yet).
+
+**Verified live (2026-09-16 16:00).** After running the script and booting 3083:
+- Token `RW-QbMSHxWY_Kf3ekh_q89ppxauSUlOJ6A-t4Gn2Rsc` (killed before live commit; refresh to get new token if needed).
+- Editor tab mounted and visible in the conversation view.
+- Tree expansion worked; `web-file-editor/src/client/EditorView.tsx` opened; Monaco rendered the 31 111-byte file in the right pane.
+- M-D.6 item 14 visible live: "Workspace" label + kit `inputStyle`-bordered select (328 wide) above the tree pane.
+- M-D.6 item 15 settings card on Settings page: verified separately (next milestone).
+
+**M-D.6 status update.** With R5 closed, M-D.6 items 14 + 15 are LIVE-VERIFIED on 3083. Item 16 remains deferred (FE-M-D.6.16, R-gate for settings.plugin.item owner extension or host-bridge plugin).
+
+**Tooling consideration.** The script lives at `scripts/link-profile-node-modules.mjs` (sibling to `link-node-modules.mjs`). Both target-aware scripts are now the primary delivery mechanism for workspace plugins: link-node-modules.mjs = workspace junctions → fork sources; link-profile-node-modules.mjs = workspace junctions → host healer's view of plugins. Re-run either when a plugin is added/renamed.
+
+**Cross-ref.** MEMORY L-7 (R5 + script mechanics). TASKS `FE-M-D.6.partial` re-tagged to LIVE-VERIFIED. Incident doc M-D.6 final section.
+
 ### 2026-09-16 15:30-15:42 — M-D.6 partial (Severity 3) shipped items 14 + 15; item 16 deferred to FE-M-D.6.16 (R-gate); live visual verification blocked by harness plugin-resolution gap
 
 **Scope.** Plan §M-D.6 items 14 (workspace picker shell), 15 (settings card pill tone + body). Item 16 (Open Editor tab button) deferred per investigation below.

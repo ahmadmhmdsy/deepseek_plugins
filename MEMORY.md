@@ -322,10 +322,20 @@ The pattern: when a plugin needs a token the kit doesn't have, centralize the va
 1. **No junction at `$DSH_HOME/profiles/node_modules`** — the loader prints "Cannot find package 'web-file-editor'". Fix: add a junction at `$DSH_HOME/profiles/node_modules/web-file-editor -> D:/my_deepseek_harness/deepseek_plugins/web-file-editor` (one-time; persists across fork resets).
 2. **Junction present but `lib/client.js` absent** — the loader errors `MissingClientBundleError` (loud boot failure). Fix: `tsdown -c tsdown.config.ts` before every boot that depends on a new bundle.
 
-**Workaround while R5 is open:** use the patch's `name:` field as a file URL (`file:///D:/my_deepseek_harness/deepseek_plugins/web-file-editor/src/index.ts`) — but MEMORY §1 says a file-URL row mounts the host half only; the client verdict fails. So both modes are partial until the junction lands.
+**Fix shipped 2026-09-16 (commit pending):** `scripts/link-profile-node-modules.mjs` (sibling to `link-node-modules.mjs`). Scans workspace plugins by reading each `package.json` `name` field; junctions into `$DSH_HOME/profiles/node_modules`. Idempotent. Skips missing `$DSH_HOME` gracefully. Live-verified: editor tab mounts, file loads, R5 closed.
 
 **Future-proofing.** Add to `scripts/link-node-modules.mjs` (or a sibling helper `scripts/link-profile-node-modules.mjs`) a step that junctions each workspace's non-@-scoped plugin package into `$DSH_HOME/profiles/node_modules`. Until then, M-D+ milestones verify via tsc + vitest only, not via live harness.
 
+
+
+
+### L-8: Plugin delivery has TWO junction stages (2026-09-16)
+
+`scripts/link-node-modules.mjs` → junction farm at `<workspace>/node_modules/<scoped>/<pkg>` (the test alias facade reads from here for vitest's TS resolution).
+
+`scripts/link-profile-node-modules.mjs` → host healer's view at `$DSH_HOME/profiles/node_modules/<pkg>` (the loader reads from here at boot).
+
+**They are NOT redundant.** The first is for tests (vitest aliases). The second is for runtime (cordis-loader). A plugin missing from EITHER will either fail tests or fail to mount at boot. Re-run both when adding a plugin. `link-node-modules.mjs` already handles scoped packages; `link-profile-node-modules.mjs` handles all workspace packages by reading their `package.json` name. Together they cover the full delivery path.
 
 
 ---
