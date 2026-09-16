@@ -62,6 +62,10 @@ export function createReadonlyWorkbench(container: HTMLElement): WorkbenchHandle
   let current = container
   const inner = document.createElement('div')
   inner.style.height = '100%'
+  inner.style.width = '100%'
+  // minHeight: 200px so the editor has a usable area when the host hasn't
+  // measured yet; automaticLayout will remeasure once the host's flex size
+  // resolves. Without this Monaco paints lines at 0px and they bleed out.
   inner.style.minHeight = '200px'
   container.replaceChildren(inner)
   const instance = monaco.editor.create(inner, {
@@ -75,7 +79,7 @@ export function createReadonlyWorkbench(container: HTMLElement): WorkbenchHandle
     lineNumbers: 'on',
     folding: true,
     fontFamily: 'ui-monospace, monospace',
-    fontSize: 12.5,
+    fontSize: 13,
     wordWrap: 'on',
     contextmenu: false,
   })

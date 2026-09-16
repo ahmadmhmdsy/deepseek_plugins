@@ -70,9 +70,41 @@ const treeScrollStyle: CSSProperties = {
   overflowY: 'auto', overflowX: 'hidden', minWidth: 0,
   borderInlineEnd: '1px solid ' + TOKENS.border, paddingInlineEnd: 8, paddingInlineStart: 2,
 }
+/**
+ * Neutral-selection backgrounds for tree rows. The kit has no dedicated
+ * constants for these; keeping them local documents intent and makes a
+ * future kit extraction trivial (rename to TOKENS.selectionBg /
+ * TOKENS.selectionBgHover).
+ */
+const NEUTRAL_SELECTION: string = 'rgba(127,127,127,0.18)'
+const NEUTRAL_SELECTION_HOVER: string = 'rgba(127,127,127,0.08)'
+
 const contentStyle: CSSProperties = {
-  flex: '1 1 auto', minWidth: 320, overflow: 'auto',
+  flex: '1 1 auto', minWidth: 320,
+  display: 'flex', flexDirection: 'column',
+  overflow: 'hidden', // the inner Monaco host scrolls; the outer pane never should
   background: TOKENS.disabledBackground, borderRadius: 6, padding: 8,
+}
+/** Inner column of one ContentPane: header row + relative-positioned host. */
+const contentPaneColumnStyle: CSSProperties = {
+  display: 'flex', flexDirection: 'column',
+  flex: '1 1 auto', minHeight: 0,
+  position: 'relative', // anchors the absolute-positioned Monaco host
+  overflow: 'hidden',
+}
+/**
+ * Monaco host: absolutely fills the column minus the header. Absolute
+ * positioning dodges the flex-shrink race where Monaco paints text at
+ * a 0px-measured canvas before automaticLayout fires.
+ */
+const contentPaneMonacoHostStyle: CSSProperties = {
+  position: 'absolute',
+  insetInlineStart: 0, insetInlineEnd: 0,
+  top: 24, // leaves room for the 14-px-tall hint header (line-height ~20)
+  bottom: 0,
+  border: '1px solid ' + TOKENS.border, borderRadius: 4,
+  background: TOKENS.inputBackground,
+  overflow: 'hidden',
 }
 const rowStyle: CSSProperties = {
   display: 'grid',
@@ -86,7 +118,7 @@ const rowStyle: CSSProperties = {
 }
 const rowSelectedStyle: CSSProperties = {
   ...rowStyle,
-  background: 'rgba(127,127,127,0.18)',
+  background: NEUTRAL_SELECTION,
   boxShadow: 'inset 2px 0 0 ' + TOKENS.accent,
 }
 const rowGlyphStyle: CSSProperties = {
@@ -108,7 +140,7 @@ const rowChevronStyle: CSSProperties = {
 const titleStyle: CSSProperties = { fontSize: 15, fontWeight: 600, margin: 0 }
 const hintStyle: CSSProperties = { fontSize: 12, opacity: 0.7, margin: 0 }
 const preStyle: CSSProperties = {
-  fontSize: 12.5, margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, monospace', lineHeight: 1.5,
+  fontSize: 13, margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, monospace', lineHeight: 1.5,
 }
 const errorStyle: CSSProperties = {
   fontSize: 13,
@@ -170,7 +202,7 @@ const EXPANDED = String.fromCharCode(0x25be) + ' '
  * that the rule cannot leak into other plugin rows.
  */
 const TREE_ROW_HOVER_RULE =
-  '.editor-tree-row:hover:not([aria-selected="true"]){background:rgba(127,127,127,0.08)}' +
+  '.editor-tree-row:hover:not([aria-selected="true"]){background:' + NEUTRAL_SELECTION_HOVER + '}' +
   '.editor-tree-row:focus-visible{outline:2px solid ' + TOKENS.accent + ';outline-offset:-2px} ' +
   SPINNER_RULE
 
@@ -535,9 +567,9 @@ function ContentPane(props: { relPath: string; size: number; content: string }):
     return () => { handle?.dispose() }
   }, [props.relPath, props.content])
   return (
-    <div>
+    <div style={contentPaneColumnStyle}>
       <p style={hintStyle}>{props.relPath} ({String(props.size)} bytes)</p>
-      <div ref={hostRef} style={{ height: 'calc(100% - 24px)', minHeight: 240 }} />
+      <div ref={hostRef} style={contentPaneMonacoHostStyle} data-editor-monaco-host='1' />
     </div>
   )
 }
