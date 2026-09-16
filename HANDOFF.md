@@ -768,6 +768,33 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
 
 **Cross-ref.** MEMORY `L-5` captures the Monaco+flex race for future work.
 
+### 2026-09-16 15:11-15:25 — M-D.5 (Severity 2 indent guides + depth-cap verification + bonus polish) implemented + visually verified + two incidental discoveries
+
+**Scope.** Plan §M-D.5 items 12, 13.
+
+**Item 12 — indent guide lines (M-D.5 polish; NEW work).** Each `Entries` container at `depth >= 1` now draws a 1px neutral-18%-alpha vertical line at the indent position (constant `INDENT_GUIDE = '1px solid rgba(127,127,127,0.18)'`). Root-level children (`depth === 0`) keep the no-guide layout (`entriesContainerRootStyle`). Two named style constants (`entriesContainerRootStyle`, `entriesContainerWithGuideStyle`) replace the prior inline `style={{display:'flex',flexDirection:'column',gap:1,paddingInlineStart:10}}`. Kit has no `TOKENS.indentGuide`; the centralized local constant documents a future extraction path.
+
+**Item 13 — depth-cap hint (verification only).** M-D.1's render path (`expanded && props.depth < 48` shows children, `expanded && props.depth >= 48` shows the hint `(deeper levels not shown — open the file directly)`) verified in live rendering at all drill-down levels. No code change needed; behavior matches plan.
+
+**Bonus 1 — friendlier 'too-large' error.** While drilling into `web-file-editor/lib/client.js` (the tsdown bundle, 8.3 MB — just over the 8 MB `MAX_READ_BYTES` cap), the right pane showed the prior developer-speak error: `file exceeds the 8388608 byte read cap`. Fixed at the source (`policy.ts`): new message format `this file is too large to preview (8.3 MB; the limit is 8 MB)` — explains what happened, gives the actual size, gives the limit. Test `fs-policy.spec.ts` updated to match the friendly phrasing.
+
+**Bonus 2 — pre-existing tsc type bug (`onTreeKeyDown`, latent since M-D.2).** M-D.2 added keyboard navigation with a handler typed `React.KeyboardEvent<HTMLDivElement>`, but the handler is attached to three call-sites with different element types:
+1. `<div role='tree' onKeyDown={onTreeKeyDown}>` (`HTMLDivElement` ✓)
+2. `<button className='editor-tree-row' onKeyDown={onTreeKeyDown}>` (rows — `HTMLButtonElement` ✗)
+3. `<button className='editor-tree-row' onKeyDown={onTreeKeyDown}>` (breadcrumb segments — `HTMLButtonElement` ✗)
+
+`tsc --noEmit` from the workspace root complained TS2322 on lines 497 and 514 since M-D.2. The handler body only uses `event.key` + `event.preventDefault` + `event.stopPropagation` + reads `current` (no element-specific API), so the type is safe to generalize. Fixed: `(event: React.KeyboardEvent<HTMLElement>): void => {...}`. tsc clean for web-file-editor (zero errors on the package; pre-existing errors in dsh-clients remain — not our scope). Vitest 135/135 PASS.
+
+**Why these bonuses belong in M-D.5, not parked.** The friendly error message surfaced during M-D.5 live verification (the only natural way to discover the bug is to click a too-large file; M-D.1's loading/error states then become the visible surface). The tsc type bug was discovered as part of the M-D.5 tsc pass (before committing M-D.5, run tsc — the broken pre-existing type was the only error the agent-owned commit could fix without expanding scope). Both fixes are reversible and scoped; deferring them would leave known wrongs in the tree.
+
+**Evidence.**
+- Agent-owned harness 3083, session 'UI Reverse Engineering Analysis', token HmHObr122OoNhpDRaiMfEDkRBdKSAiD_2fB7wqYrTZ0.
+- Screenshots: `.live-test/editor-md5-3levels.png` (3 distinct indent guide lines visible at workspace root, web-file-editor, and lib/ drill-downs); `.live-test/editor-md5-error2.png` (friendly red error banner shown for the 8.3 MB client.js); `.live-test/editor-md5-AGENTS.png` (regression test — AGENTS.md renders opaque on the absolute-positioned Monaco host from M-D.4).
+- bundle 8.73 MB clean. vitest 135/135 PASS.
+- Killed cleanly (PID 4872); port 3083 free.
+
+**Cross-ref.** MEMORY `L-6` captures the kit-gap finding (no `TOKENS.indentGuide`). Incident doc gets the friendly-error fix and the type-bug genealogy.
+
 ### 2026-09-16 14:36-14:43 — M-D.3 (Severity 2 row metadata) implemented + visually verified
 
 **Issue.** Plan §M-D.3: per-row kind glyph + size + mtime columns were missing — the Editor view was throwing away `FsEntryWire.size` and `FsEntryWire.modifiedMs` even though both are already on the wire (verified in `src/remote/policy.ts` `listEntries` L20-41). Without metadata, the file tree gives users no hint about file recency or size, which is the same affordance every native file manager / VS Code Explorer / sidebar-files has — the editor felt primitive in comparison.

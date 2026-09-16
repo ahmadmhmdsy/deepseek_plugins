@@ -298,4 +298,19 @@ Visible symptom: Monaco text painted at full opacity on a transparent canvas, le
 Cross-ref: HANDOFF 2026-09-16 14:44-15:03 (M-D.4 mid-flight fix), .live-test/editor-md4-claude.png / -reload.png / -debug.png (bug screenshots), editor-md4-fix1.png (post-fix).
 
 
+
+### L-6: Kit tokens gap — no `indentGuide` (and a few other neutral helpers) (2026-09-16, M-D.5)
+
+The plugin-kit `chrome.tsx` exports a `TOKENS` constant for the chrome of cards / panes. As of M-D.5 it covers: `text`, `textMuted`, `accent`, `accentSoft`, `danger`, `dangerSoft`, `warn`, `warnSoft`, `border`, `borderStrong`, `inputBorder`, `inputBackground`, `disabledBackground`, `radius`, `fontUi = 13`, `fontSmall = 12`, `fontCaption = 11`.
+
+What M-D.5 + M-D.4 needed but the kit did NOT have:
+1. `TOKENS.selectionBg` + `TOKENS.selectionBgHover` — neutral gray for tree row selection. M-D.4 centralized locally as `NEUTRAL_SELECTION` / `NEUTRAL_SELECTION_HOVER` (`rgba(127,127,127,0.18)` / `rgba(127,127,127,0.08)`).
+2. `TOKENS.indentGuide` — 1px neutral line at tree indentation. M-D.5 centralized locally as `INDENT_GUIDE` = `'1px solid rgba(127,127,127,0.18)'`.
+3. `TOKENS.surface` (or `TOKENS.surfaceBackground`) — the right-pane body background. M-D.4 uses `TOKENS.disabledBackground` as a stand-in.
+
+The pattern: when a plugin needs a token the kit doesn't have, centralize the value locally with a comment explaining the kit gap and the future extraction. **Do not** import kit internals to extend the kit unilaterally (kit is shared across plugins; changes go through plan + user approval). When the same need surfaces in a SECOND plugin (K3 rule — ≥2 proven users), the kit extraction becomes a real task with its own spec/plan.
+
+**Cross-ref.** HANDOFF 2026-09-16 14:44-15:03 (M-D.4 first surfaces `selectionBg` gap) and 2026-09-16 15:11-15:25 (M-D.5 `indentGuide` gap). Future M-E (theme seam initiative) is the natural owner; until then the local constants ship with the plugin.
+
+
 ---

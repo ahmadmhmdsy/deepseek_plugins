@@ -175,3 +175,43 @@ Agent-owned 3083 was killed at 14:18 (PID 13752, `Stop-Process -Force`); port co
 - Killed harness cleanly (PID 9184); port 3083 free.
 
 **Cross-ref.** MEMORY `L-5` captures the Monaco+flex race as a reusable lesson. Bug screenshots preserved.
+
+
+## M-D.5 live verification (2026-09-16 15:11-15:25, agent-owned 3083)
+
+**Scope.** Plan §M-D.5 items 12 (indent guide line) + 13 (depth-cap hint). Two bonus discoveries recordable as issues + fixes.
+
+### Indent guide line (item 12)
+
+**Implementation.** `Entries` container at `depth >= 1` draws a 1px neutral-18%-alpha vertical line at the indent position (`INDENT_GUIDE` local constant). Root-level children (`depth === 0`) get the no-guide layout. Two named style constants (`entriesContainerRootStyle`, `entriesContainerWithGuideStyle`) replace the prior inline style.
+
+**Visual evidence.** `.live-test/editor-md5-3levels.png`: workspace-root level, web-file-editor level, and lib/ level each show their own guide line — three distinct vertical guides after drilling through two directory levels.
+
+### Depth-cap hint (item 13)
+
+**Implementation.** M-D.1's existing render path: `expanded && props.depth < 48` shows children, `expanded && props.depth >= 48` shows the hint paragraph `(deeper levels not shown — open the file directly)`. No code change for M-D.5; verified the rendered output at the live drill-downs above.
+
+### Discovery 1 — friendly 'too-large' error (bonus fix)
+
+**Issue.** Drilling into `web-file-editor/lib/client.js` (8.3 MB, just over the 8 MB cap) hit the prior error message: `file exceeds the 8388608 byte read cap`. Developer-speak — meaningless to a user.
+
+**Root cause.** `policy.ts` `readFileContent` threw `FsPolicyError('too-large', 'file exceeds the ' + MAX_READ_BYTES + ' byte read cap')` — accurate but unreadable.
+
+**Fix.** Replaced with: `this file is too large to preview (8.3 MB; the limit is 8 MB)`. Format uses one decimal for the actual size, integer for the cap, both in MB. Updated `fs-policy.spec.ts` to assert the friendly phrasing (`/too large to preview/` + `/MB.*limit/` + instance check).
+
+**Visual evidence.** `.live-test/editor-md5-error2.png`: red banner reads `Error: fileEditor/read failed: file-editor: this file is too large to preview (8.3 MB; the limit is 8 MB)`.
+
+### Discovery 2 — pre-existing tsc type bug (bonus fix, latent since M-D.2)
+
+**Issue.** Running `tsc --noEmit` from the workspace root before committing M-D.5 surfaced TS2322 errors at `web-file-editor/src/client/EditorView.tsx` lines 497 and 514. Both about `onTreeKeyDown`: the handler was typed `React.KeyboardEvent<HTMLDivElement>` but attached to `<button>` rows + breadcrumb segments.
+
+**Root cause.** M-D.2 typed the handler for the only callsite that worked (the `<div role='tree'>` root). The handler is actually attached to three callsites, two of which are `<button>`. Latent since M-D.2 (~5 days); only caught because M-D.5 ran tsc explicitly.
+
+**Fix.** Generalized the type to `React.KeyboardEvent<HTMLElement>`. The handler body only uses `event.key` + `preventDefault` + `stopPropagation` + reads `current` (the active element) — none of which is element-typed. Safe generalization, zero behavior change.
+
+**Validation.** `tsc --noEmit` from the workspace root: 0 `web-file-editor` errors (pre-existing dsh-clients errors remain — out of scope). `vitest run`: 135/135 PASS.
+
+### Cross-refs
+- HANDOFF `2026-09-16 15:11-15:25` block for the narrative.
+- MEMORY `L-6` for the kit-tokens-gap finding (`TOKENS.indentGuide`, `TOKENS.selectionBg`, `TOKENS.surface` extraction candidates).
+- Plan: `docs/superpowers/plans/2026-09-14-file-editor-plugin.md` §M-D.5.
