@@ -17,13 +17,14 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { NS } from '../ns.ts'
 import { connectTabGate, tabMountContext } from './gating.ts'
+import type { EditorFsFace } from './fs-remote.ts'
 import { faceForRemote, fileEditorFsContribution } from './fs-remote.ts'
 import { EditorView } from './EditorView.tsx'
 import { EditorCardController, type EditorScopeFace } from './card-controller.ts'
 import { EditorSettingsCard } from './SettingsCard.tsx'
 
 export { VIEW_ID, VIEW_LABEL, VIEW_ORDER, VIEW_SLOT } from './registration.ts'
-export { EditorView, type EditorViewInjected, type WorkspaceRowFace } from './EditorView.tsx'
+export { EditorView, type EditorViewInjected, type EditorViewProps, type SnapshotSelectorHook, type WorkspaceRowFace } from './EditorView.tsx'
 export { createReadonlyWorkbench, languageForPath, type WorkbenchHandle } from './workbench.ts'
 export { EditorSettingsCard } from './SettingsCard.tsx'
 export { EditorCardController, type EditorCardFace, type EditorCardState } from './card-controller.ts'
@@ -58,25 +59,52 @@ export function apply(ctx: ClientContext): void {
   const editor = ctx as EditorClientContext
 
   // Data plane: mount the strict contribution for the whole plugin lifetime;
-  // faceForRemote succeeds once the namespace handle exists.
+  // faceForRemote succeeds once the namespace handle exists. The mount is
+  // ASYNC: the view learns about it through the fs hook source (the renderer
+  // memoizes a static inject face at first evaluation, which lands before
+  // the mount resolves and would pin the busy placeholder forever).
+  const fsListeners = new Set<() => void>()
+  let fsFace: EditorFsFace | undefined
+  const ensureFace = (): EditorFsFace | undefined => {
+    if (fsFace === undefined) {
+      try {
+        fsFace = faceForRemote(editor.remote as unknown as Record<string, unknown>)
+      } catch {
+        return undefined // namespace not mounted yet: keep the busy placeholder
+      }
+    }
+    return fsFace
+  }
+  const emitFs = (): void => { for (const listener of fsListeners) listener() }
   ctx.effect(async (): Promise<() => void> => {
     const mount = editor.remote?.$mount(fileEditorFsContribution())
     if (mount === undefined) return () => { /* no Remote carrier in this profile */ }
     const dispose = await mount
+    fsFace = ensureFace()
+    emitFs()
     return async () => { await dispose() }
   }, 'web-file-editor: fileEditor Remote mount')
 
-  const ensureFace = (): ReturnType<typeof faceForRemote> | undefined => {
-    try {
-      return faceForRemote(editor.remote as unknown as Record<string, unknown>)
-    } catch {
-      return undefined // namespace not mounted yet: keep the busy placeholder
-    }
+  const fsSource = {
+    getSnapshot: () => ensureFace(),
+    subscribe: (listener: () => void) => {
+      fsListeners.add(listener)
+      return () => { fsListeners.delete(listener) }
+    },
+  }
+  // Rows ride the runtime's own store snapshot (stable identity until the
+  // list store writes), so the hook never loops on a fresh array literal.
+  const EMPTY_ROWS: readonly { workspaceId: string; title: string; path: string }[] = []
+  const workspacesSource = {
+    getSnapshot: () => {
+      const items = workspacesRows(editor)
+      return items.length === 0 ? EMPTY_ROWS : items
+    },
+    subscribe: (listener: () => void) => editor.workspaces?.list.subscribe(listener) ?? (() => undefined),
   }
 
   const injected = () => ({
-    fs: ensureFace(),
-    workspaces: workspacesRows(editor),
+    hooks: { fs: fsSource, workspaces: workspacesSource },
   })
 
   const scope = (editor as unknown as {

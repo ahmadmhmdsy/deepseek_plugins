@@ -45,6 +45,32 @@ not silently edit either side (AGENTS.md §7).
   The slot type declaration merges come in as `import type {}` from
   `dsh-client-ui-settings*/client` — type-only imports are erased and never
   reach the gate.
+
+### 1b. Inject-face reactivity — NEVER put async values inside the inject face
+
+ui-renderer **memoizes each slot entry's inject result per binding**
+(`cachedRootInject` / `cachedSessionInject` WeakMaps). A static inject face
+evaluated before an async handler resolves (e.g. `remote.$mount`) is then
+pinned forever — proven live in the Editor tab's "still mounting" bug (0.1.6-
+alpha.1, incident docs/incidents/2026-09-16-editor-tab-still-mounting-inject-cache.md).
+The renderer-blessed fix, copied from `ui-workspace`:
+
+- The inject face carries **hook sources** — objects with `getSnapshot()` /
+  `subscribe(listener)` (the `HostObservable` currency): `inject: () =>
+  ({ hooks: { fs: fsSource, workspaces: workspacesSource } })`.
+- The renderer mines each name via `standardHookPropName` and hands the
+  component synthetic selector hooks `use<Name>` — shape
+  `<R>(select: (value: T) => R) => R`:
+  `const fs = props.useFs?.(v => v)`.
+- **Snapshot identities must be stable** while no notify happened (the uSES
+  loop is identity-based): cache the resolved face once; return a shared
+  `EMPTY_*` constant instead of a fresh array literal when empty.
+- After the async resolution, mutate the snapshot then call every subscribed
+  listener (`emitFs()`); the synthesized hooks re-render the tree.
+
+Tests that call the view factory directly with a fully-formed face hide this
+bug — exercise the inject face as data (sources present, snapshot flips after
+the mount promise resolves) to catch it.
 - The card edits go through the settings scope (staged draft → save plan), not
   by writing the store file directly. The host bridge commits them back to the
   file through the settings commit watcher, and external file edits are

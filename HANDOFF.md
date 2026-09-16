@@ -673,3 +673,34 @@ TASKS.md · MEMORY.md · ENVIRONMENT.md  live status · durable lessons · machi
 - chatFileMentions (optional service, provided by ui-deliverables) lets a provider control WHICH tokens are clickable and the opener closure, but NOT the view switch; re-providing the service from our plugin would silently collide (last apply wins) with ui-deliverables provider - rejected.
 - Verdict: a plugin-side chat-mention click that switches to the Editor tab is impossible without either (a) a ui-conversation change (checkout code - outside the plugin boundary) or (b) a host-side cross-view open service. NEEDS_USER_DECISION recorded on TASKS.md.
 Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delete) and FE-M-C (DnD/reorganize, workspace search) stay queued and are NOT forgotten.
+(Note: 2026-09-15 user decision — Task 6 is superseded by the native file preview in the new release; recorded COMPACT-1/§8h.)
+
+### Post-COMPAT-1 fix — Editor tab stuck on "still mounting" (2026-09-16)
+- Live symptom on 3080 (0.1.6-alpha.1): clicking the Editor tab rendered only
+  "Editor / The workspace file service is still mounting..." — no explorer.
+- Root cause: ui-renderer MEMOIZES each slot entry's inject result per binding
+  (`scoped-slots.tsx` cachedRootInject/cachedSessionInject); our static
+  `inject: () => ({ fs, workspaces })` face was evaluated ONCE, before the
+  async `remote.$mount` resolved, pinning `fs: undefined` forever. No
+  reactive channel existed.
+- Fix: hooks-based inject face. Client inject face is now
+  `() => ({ hooks: { fs: fsSource, workspaces: workspacesSource } })`;
+  `fsSource` is a manual observable whose snapshot is undefined until the
+  mount inside the lifetime `ctx.effect` resolves (then the cached
+  `EditorFsFace`, `emitFs()` notifies); `workspacesSource` rides
+  `workspaces.list` with a shared `EMPTY_ROWS` constant for the empty case
+  (identity-stable, no hook loop). `EditorView.tsx` consumes renderer-
+  synthesized `useFs`/`useWorkspaces` selector hooks (local structural
+  `SnapshotSelectorHook<T>`; no value import — purity gate safe).
+- Validation: full suite 19 files / 135 tests PASS via target vitest bin
+  (13:29:05, exit 0), re-run green 13:32 after a simplification (fs snapshot
+  path reads `ensureFace()` directly; no stale-snapshot edge); tsdown rebuild
+  8.71 MB exit 0; `--profile web --dump-config` exit 0 (web-file-editor row
+  present). tsc facade errors are vendor-chain noise eradication in progress —
+  delta over pre-fix state: zero (web-file-editor sources clean).
+- Guide feedback delivered same-task: new §1b "Inject-face reactivity" in
+  docs/best-practices/creating-a-client-card-plugin.md.
+- Full record: docs/incidents/2026-09-16-editor-tab-still-mounting-inject-cache.md.
+- STILL OPEN (user checkpoint): live browser confirmation that the tab lists
+  and reads workspaces (hard reload first — combo/revision channel re-serves
+  the rebuilt bundle on refresh).

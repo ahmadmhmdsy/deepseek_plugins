@@ -11,6 +11,9 @@
  */
 import { VIEW_ID, VIEW_LABEL, VIEW_ORDER, VIEW_SLOT } from './registration.ts'
 import type { EditorViewInjected } from './EditorView.tsx'
+// EditorViewInjected is the registration-side face (hooks: sources); the
+// renderer mines it into EditorViewProps (useFs/useWorkspaces) for the
+// component itself.
 
 /** The settings face this gate reads (bound settingsScope store). */
 export interface EditorSettingsFace {

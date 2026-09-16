@@ -238,3 +238,12 @@ durable, reusable lessons and cross-checkout facts.
   frozen externals table); client delivery pattern copied from web-compact-config.
 - Plan doc: docs/superpowers/plans/2026-09-14-file-editor-plugin.md (direction
   approved; formal spec owed before implementation).
+- **Inject faces are MEMOIZED per slot binding (0.1.6-alpha.1)** — a static
+  inject face evaluated before an async remote.$mount resolves is pinned
+  forever (live "still mounting" Editor tab, fixed 2026-09-16). Pattern: the
+  inject face carries hooks: sources (getSnapshot/subscribe); the renderer
+  synthesizes use<Name> selector hooks for the component. Snapshot identities
+  must stay stable between notifications (cache the face; shared EMPTY_*
+  constant instead of fresh array literals). Direct-call unit tests with a
+  fully-formed face CANNOT catch this — test the inject face as data.
+  Record: docs/incidents/2026-09-16-editor-tab-still-mounting-inject-cache.md.

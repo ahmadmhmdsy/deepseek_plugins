@@ -4,10 +4,10 @@
  * the right. The Monaco chunk replaces the plain text pane in Task 4; the
  * tree/read flow here is the stable shell around it.
  *
- * Data flow: the workspace rows arrive through injected
- * { fs, workspaces } (injection face from the tab registration: the mounted
- * fileEditor Remote face plus the client runtime's workspace rows); entries
- * and file contents ride that face's list()/read().
+ * Data flow: the registration's inject face carries hooks: sources —
+ * useFs (the mounted fileEditor Remote face, undefined until the async
+ * $mount resolves) and useWorkspaces (the client runtime's workspace rows);
+ * entries and file contents ride the face's list()/read().
  *
  * @module web-file-editor/client/EditorView
  */
@@ -16,12 +16,28 @@ import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/clie
 import type { EditorFsFace, FsEntryWire, FsReadResult } from './fs-remote.ts'
 import { createReadonlyWorkbench, languageForPath, type WorkbenchHandle } from './workbench.ts'
 
-/** Injection face the tab registration passes per mount. */
+/**
+ * Snapshot selector hook the slot renderer binds to the inject face's
+ * `hooks:` sources (standardHookPropName renames 'fs'/'workspaces' into the
+ * useFs/useWorkspaces props). Structural twin of the renderer's hook
+ * contract — no value import needed.
+ */
+export type SnapshotSelectorHook<T> = <R>(select: (value: T) => R) => R
+
+/** Injection face the tab registration passes per mount: observable sources. */
 export interface EditorViewInjected {
-  /** The mounted fileEditor Remote namespace face (undefined until mounted). */
-  fs: EditorFsFace | undefined
-  /** Workspace rows the tab offers as tree roots. */
-  workspaces: readonly WorkspaceRowFace[]
+  hooks: {
+    /** The mounted fileEditor Remote namespace face (undefined until mounted). */
+    fs: { getSnapshot(): EditorFsFace | undefined; subscribe(listener: () => void): () => void }
+    /** Workspace rows the tab offers as tree roots. */
+    workspaces: { getSnapshot(): readonly WorkspaceRowFace[]; subscribe(listener: () => void): () => void }
+  }
+}
+
+/** The hook props the renderer feeds back into this component. */
+export interface EditorViewProps {
+  useFs?: SnapshotSelectorHook<EditorFsFace | undefined>
+  useWorkspaces?: SnapshotSelectorHook<readonly WorkspaceRowFace[]>
 }
 
 /** Minimal workspace row the tree roots off (client runtime projections). */
@@ -81,10 +97,16 @@ type FileUiState = DirState & { readonly read: FsReadResult | undefined }
 
 /**
  * The Editor tab workbench.
- * @param props - conversation view runtime props plus our injection face.
+ * @param props - conversation view runtime props plus our injection face
+ *   (the renderer mines the face's hooks: sources into useFs/useWorkspaces
+ *   props — the inject cache alone would freeze a static face at the
+ *   pre-mount snapshot and the tab would never leave its busy placeholder).
  */
-export function EditorView(props: ConvViewProps & Partial<EditorViewInjected>): JSX.Element {
-  const { fs, workspaces } = props
+export function EditorView(props: ConvViewProps & EditorViewProps): JSX.Element {
+  // Hook-source presence is stable per registration; the early-return
+  // fallbacks only shield a hypothetical face missing its hooks key.
+  const fs = props.useFs === undefined ? undefined : props.useFs(value => value)
+  const workspaces = props.useWorkspaces === undefined ? undefined : props.useWorkspaces(value => value)
   const [workspaceId, setWorkspaceId] = useState<string | null>(() => workspaces?.[0]?.workspaceId ?? null)
   const [dirs, setDirs] = useState<Record<string, DirState>>({})
   const [file, setFile] = useState<{ readonly relPath: string; readonly state: FileUiState } | undefined>(undefined)
