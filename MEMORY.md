@@ -278,4 +278,24 @@ This check is **cheaper and more reliable than visual inspection** because the s
 If the design ever wants "folder size", that needs a separate `getDirectorySize()` recursive scan — do not derive it from `stats.size`. Cross-platform behaviour differs (Windows typically 0; POSIX typically 4096 for empty dirs).
 
 
+
+### L-5: Monaco + flex layout race — use absolute positioning, not flex children (2026-09-16, M-D.4 mid-flight fix)
+
+Monaco with `automaticLayout: true` measures its host div via ResizeObserver and resizes its inner canvas to match. When the host is a flex child of a column that resolves height only after layout settles (typical for slot entries that mount mid-session), there's a race:
+
+1. Editor view mounts → render → `useEffect` runs.
+2. `createReadonlyWorkbench(host)` runs `monaco.editor.create(inner, ...)` with the host at whatever size flex has produced.
+3. If flex produced 0px (transient state before the column flexed in), Monaco measures 0, paints lines at their absolute Y positions **without clipping**, and the lines bleed visually out of the host.
+
+Visible symptom: Monaco text painted at full opacity on a transparent canvas, leaking over neighboring UI (sidebar, tree, etc.). Reproducible after every reload.
+
+**Fix:** position the Monaco host absolutely (`position: absolute; top: 24px; bottom: 0; left: 0; right: 0`) inside a `position: relative` parent column. The absolute box is computed from `top` + `bottom` of the parent — bounded regardless of when `automaticLayout` fires. Header sits in the normal flex flow above the absolute host.
+
+**Anti-pattern:** `flex: 1 1 auto; minHeight: 0` on the Monaco host with `automaticLayout: true` and a flex-column parent. Looks right, but the race bites in production.
+
+**Workaround if absolute positioning is not viable:** set an explicit pixel height on the host via `ResizeObserver` measured off the parent, before calling `createReadonlyWorkbench`. Adds complexity; the absolute pattern is simpler.
+
+Cross-ref: HANDOFF 2026-09-16 14:44-15:03 (M-D.4 mid-flight fix), .live-test/editor-md4-claude.png / -reload.png / -debug.png (bug screenshots), editor-md4-fix1.png (post-fix).
+
+
 ---

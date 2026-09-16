@@ -737,6 +737,37 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
   interaction) when the user signs off.
 
 
+### 2026-09-16 14:44-15:03 — M-D.4 (Severity 2 kit consistency + flex layout + fontSize) implemented + visually verified (with mid-flight Monaco layout fix)
+
+**Issue.** Plan §M-D.4: three items.
+1. Hardcoded neutral-selection RGBA colors (`rgba(127,127,127,0.18)`, `rgba(127,127,127,0.08)`) — kit has no `selectionBg` constant, but they were inlined in two places (row style + hover CSS rule).
+2. The right pane had `overflow: auto` on its outer container — when a file was opened, the entire pane scrolled (header + content + chat bleed-through) instead of the Monaco host scrolling internally. Layout bug: short files leave a gap, long files scroll the wrong axis.
+3. `fontSize: 12.5` in Monaco + the `<pre>` fallback — odd non-pixel size; kit's `TOKENS.fontUi = 13`.
+
+**Fix.** Commit `c8e0d84`:
+
+- *Item 9 — TOKENS thread-through.* Centralized `rgba(127,127,127,0.18)` → `NEUTRAL_SELECTION`, `rgba(127,127,127,0.08)` → `NEUTRAL_SELECTION_HOVER`. Both referenced from `rowSelectedStyle` and the `TREE_ROW_HOVER_RULE` CSS string. Zero raw rgba literals in JSX or CSS rules. Documented the kit gap and the future extraction path (`TOKENS.selectionBg / TOKENS.selectionBgHover`).
+- *Item 10 — flex layout.* `contentStyle`: `overflow: auto` → `display: flex; flexDirection: column; overflow: hidden`. `ContentPane`: `contentPaneColumnStyle` (`flex: 1 1 auto; minHeight: 0; position: relative; overflow: hidden`) hosts the hint header in the normal flow + the Monaco host absolutely positioned (`inset: 24 0 0 0` — top 24px clears the header). `workbench.ts`: inner `width: 100%`, `minHeight: 200px` restored to give Monaco a usable area before the host's flex size resolves. Header `{relPath} ({size} bytes)` now stays as a fixed row at the top; long files scroll inside Monaco only.
+- *Item 11 — fontSize 12.5 → 13.* Monaco config + `preStyle` (the `<pre>` fallback when Monaco fails to instantiate).
+
+**Mid-flight issue + fix.** First attempt at the flex layout used `flex: 1 1 auto; minHeight: 0` on the Monaco host without absolute positioning. Result: Monaco rendered its lines against a 0px-measured canvas, painted text at full opacity, and the text bled into the tree area on the left. Two screenshots document the bug: `.live-test/editor-md4-claude.png` and `.live-test/editor-md4-reload.png` (text overlay on tree). Fix: switched to `position: absolute; inset: 24 0 0 0` so the host has a bounded size from the parent column's height, regardless of when `automaticLayout` fires. Rebuilt + reverified.
+
+**Why the flex race hits Monaco specifically.** Monaco with `automaticLayout: true` measures the host div on a ResizeObserver and resizes its inner canvas to match. The race: when the Editor view mounts, the host div's `flex: 1 1 auto` resolves only after layout; `createReadonlyWorkbench` is called inside a `useEffect` (after first paint), so Monaco grabs the host at whatever size flex has produced. If flex produced 0 (transient state before the column flexed in), Monaco measures 0, paints lines at their absolute Y positions without clipping, and the lines overflow visually. Absolute positioning solves this because the host's box is computed from `top: 24, bottom: 0` of an already-bounded parent column.
+
+**Evidence.**
+- Bundle 8.73 MB clean; tsc exit 0; vitest 135/135 PASS.
+- Agent-owned harness 3083, UI Reverse Engineering Analysis session. Token ZNN_KnVyn5IrxPWopp3Kq3Wm_To5C9QVg1kCig2KcEo. Screenshots: `.live-test/editor-md4-fix1.png` (CLAUDE.md opaque on white background, no bleed); `.live-test/editor-md4-fix1-AGENTS.png` (AGENTS.md rendered, Monaco internal scroll confirmed, header stays put); `.live-test/editor-md4-placeholder.png` (empty state after Chat→Editor round-trip, workspace name still centered).
+- Bug screenshots preserved for the record: `.live-test/editor-md4-claude.png`, `.live-test/editor-md4-reload.png`, `.live-test/editor-md4-debug.png`.
+- Killed cleanly (PID 9184); port 3083 free.
+
+**Caveats / future work.**
+- Right pane still uses kit's `TOKENS.disabledBackground` (`#f5f6f8`); if M-E ships a `TOKENS.surface` constant for "pane body", wire it through.
+- The file header `{relPath} ({size} bytes)` does not localize; fine for now.
+- M-D.7 (Monaco polish) will revisit theme awareness — out of scope here.
+- The right edge of AGENTS.md screenshots shows Monaco's word-wrap truncating wide content slightly (the `st entries` / `st at session start` text). Monaco already has `wordWrap: 'on'` — the truncation is because the pane width + Monaco's monospace font + the markdown table's wide cells exceed the column width. Fine for now (scrolling still works); could add horizontal scroll later.
+
+**Cross-ref.** MEMORY `L-5` captures the Monaco+flex race for future work.
+
 ### 2026-09-16 14:36-14:43 — M-D.3 (Severity 2 row metadata) implemented + visually verified
 
 **Issue.** Plan §M-D.3: per-row kind glyph + size + mtime columns were missing — the Editor view was throwing away `FsEntryWire.size` and `FsEntryWire.modifiedMs` even though both are already on the wire (verified in `src/remote/policy.ts` `listEntries` L20-41). Without metadata, the file tree gives users no hint about file recency or size, which is the same affordance every native file manager / VS Code Explorer / sidebar-files has — the editor felt primitive in comparison.

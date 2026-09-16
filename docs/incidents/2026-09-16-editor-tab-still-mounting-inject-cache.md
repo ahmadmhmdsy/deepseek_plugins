@@ -156,3 +156,22 @@ Agent-owned 3083 was killed at 14:18 (PID 13752, `Stop-Process -Force`); port co
 - Title tooltip does not localize; fine for now.
 
 **Cross-ref.** MEMORY `L-4` captures the inode-vs-content trap for future tree-row work.
+
+
+## M-D.4 live verification (2026-09-16 14:44-15:03, agent-owned 3083)
+
+**Scope.** Plan §M-D.4 items 9, 10, 11: TOKENS thread-through, right-pane flex layout, fontSize 12.5 → 13.
+
+**Mid-flight issue.** First attempt at the right-pane flex layout used `flex: 1 1 auto; minHeight: 0` on the Monaco host. Result: Monaco rendered its lines against a 0px-measured canvas, painted at full opacity, and the text bled into the tree area. Bug screenshots: `.live-test/editor-md4-claude.png`, `.live-test/editor-md4-reload.png`, `.live-test/editor-md4-debug.png`.
+
+**Root cause.** Monaco with `automaticLayout: true` measures its host via ResizeObserver. The race: the Editor view's useEffect calls `createReadonlyWorkbench(host)` after first paint, but the host's flex child size resolves only after layout settles. If Monaco measures at 0px (transient state), it paints lines at their absolute Y positions without clipping — text overflows visually.
+
+**Fix.** Switched the Monaco host from `flex: 1 1 auto; minHeight: 0` to `position: absolute; inset: 24 0 0 0` (top 24px clears the header). The absolute box is bounded by `top` + `bottom` of the parent column, regardless of when `automaticLayout` fires. Restored `workbench.ts` inner `minHeight: 200px` so Monaco has a usable area before the host's flex size resolves.
+
+**Evidence.**
+- Commit `c8e0d84`. Bundle 8.73 MB clean. Tsc exit 0. Vitest 135/135 PASS.
+- Agent-owned harness 3083, UI Reverse Engineering Analysis session. Token ZNN_KnVyn5IrxPWopp3Kq3Wm_To5C9QVg1kCig2KcEo.
+- Post-fix screenshots: `.live-test/editor-md4-fix1.png` (CLAUDE.md, opaque white background, no bleed); `.live-test/editor-md4-fix1-AGENTS.png` (AGENTS.md, Monaco internal scroll confirmed, header `AGENTS.md (14122 bytes)` stays put at top); `.live-test/editor-md4-placeholder.png` (empty state after Chat→Editor round-trip — workspace name still centered, no regression).
+- Killed harness cleanly (PID 9184); port 3083 free.
+
+**Cross-ref.** MEMORY `L-5` captures the Monaco+flex race as a reusable lesson. Bug screenshots preserved.
