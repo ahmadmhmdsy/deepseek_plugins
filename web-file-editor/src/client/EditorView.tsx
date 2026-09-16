@@ -11,7 +11,7 @@
  *
  * @module web-file-editor/client/EditorView
  */
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { EditorFsFace, FsEntryWire, FsReadResult } from './fs-remote.ts'
 import { createReadonlyWorkbench, languageForPath, type WorkbenchHandle } from './workbench.ts'
@@ -104,6 +104,42 @@ const emptyHintStyle: CSSProperties = {
   fontSize: 12, color: TOKENS.textMuted, padding: '2px 6px 2px 24px',
 }
 
+const breadcrumbStyle: CSSProperties = {
+  display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2,
+  fontSize: 12, color: TOKENS.textMuted,
+  padding: '2px 2px 4px', minHeight: 22,
+}
+const breadcrumbSegStyle: CSSProperties = {
+  cursor: 'pointer', padding: '1px 6px', borderRadius: 4,
+  border: '1px solid transparent',
+}
+const breadcrumbSepStyle: CSSProperties = {
+  opacity: 0.5, padding: '0 2px', userSelect: 'none',
+}
+const breadcrumbLeafStyle: CSSProperties = {
+  padding: '1px 6px', borderRadius: 4, color: TOKENS.text, fontWeight: 500,
+}
+const placeholderTitleStyle: CSSProperties = { fontSize: 16, fontWeight: 600, margin: '0 0 4px', color: TOKENS.text }
+const placeholderDescStyle: CSSProperties = { fontSize: 13, margin: '0 0 2px', color: TOKENS.textMuted }
+const placeholderSpinnerStyle: CSSProperties = {
+  display: 'inline-block', width: 14, height: 14, verticalAlign: 'text-bottom',
+  border: '2px solid ' + TOKENS.border, borderTopColor: TOKENS.accent,
+  borderRadius: '50%', animation: 'editor-spin 1s linear infinite',
+  marginInlineEnd: 6,
+}
+const placeholderContainerStyle: CSSProperties = {
+  display: 'flex', flexDirection: 'column', justifyContent: 'center',
+  alignItems: 'center', textAlign: 'center', height: '100%', gap: 6, padding: 24,
+}
+
+/**
+ * Identity-placeholder spinner keyframes. Sits in the same scoped <style>
+ * tag as TREE_ROW_HOVER_RULE (data-editor-tree-row-styles) so cleanup is
+ * automatic on unmount; class name has 'editor-' prefix to avoid clashing
+ * with the host theme.
+ */
+const SPINNER_RULE = '@keyframes editor-spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}'
+
 const COLLAPSED = String.fromCharCode(0x25b8) + ' '
 const EXPANDED = String.fromCharCode(0x25be) + ' '
 
@@ -115,10 +151,55 @@ const EXPANDED = String.fromCharCode(0x25be) + ' '
  */
 const TREE_ROW_HOVER_RULE =
   '.editor-tree-row:hover:not([aria-selected="true"]){background:rgba(127,127,127,0.08)}' +
-  '.editor-tree-row:focus-visible{outline:2px solid ' + TOKENS.accent + ';outline-offset:-2px}'
+  '.editor-tree-row:focus-visible{outline:2px solid ' + TOKENS.accent + ';outline-offset:-2px} ' +
+  SPINNER_RULE
 
 function dirKey(workspaceId: string, relDir: string): string {
   return workspaceId + '#' + relDir
+}
+
+
+/** Flatten-tree row descriptor (M-D.2 keyboard nav). */
+interface FlatRow {
+  readonly kind: 'root' | 'dir' | 'file'
+  readonly relPath: string
+}
+
+/** DFS display order; stable across renders when the dirs map is stable. */
+function flattenRows(dirs: Record<string, DirState>, workspaceId: string): FlatRow[] {
+  const out: FlatRow[] = [{ kind: 'root', relPath: '' }]
+  const walk = (relDir) => {
+    const state = dirs[dirKey(workspaceId, relDir)]
+    if (state === undefined || state.expanded !== true) return
+    for (const entry of state.entries) {
+      const childRel = relDir === '' ? entry.name : relDir + '/' + entry.name
+      if (entry.kind === 'directory') {
+        out.push({ kind: 'dir', relPath: childRel })
+        walk(childRel)
+      } else {
+        out.push({ kind: 'file', relPath: childRel })
+      }
+    }
+  }
+  walk('')
+  return out
+}
+
+/** Deepest expanded directory; alphabetic tiebreak on equal length. */
+function deepestExpandedDir(dirs, workspaceId) {
+  let best = ''
+  for (const key of Object.keys(dirs)) {
+    if (!key.startsWith(workspaceId + '#')) continue
+    if (dirs[key] === undefined || dirs[key].expanded !== true) continue
+    const rel = key.slice(workspaceId.length + 1)
+    if (rel.length > best.length || (rel.length === best.length && rel < best)) best = rel
+  }
+  return best
+}
+
+/** '' → []; 'a/b/c' → ['a','b','c']. */
+function splitPath(rel) {
+  return rel === '' ? [] : rel.split('/')
 }
 
 type FileUiState = DirState & { readonly read: FsReadResult | undefined }
@@ -173,12 +254,122 @@ export function EditorView(props: ConvViewProps & EditorViewProps): JSX.Element 
       .catch(error => { setFile({ relPath, state: { ...EMPTY_DIR, expanded: true, loading: false, read: undefined, error: String(error) } }) })
   }
 
+  // Keyboard nav (M-D.2): flatten rows for tree container keyboard handling.
+  const flatRows = useMemo<FlatRow[]>(
+    () => workspaces === undefined || effectiveWorkspace === null ? [] : flattenRows(dirs, effectiveWorkspace),
+    [workspaces, effectiveWorkspace, dirs],
+  )
+  // Breadcrumb anchor: the selected file's parent dir if any file is open,
+  // else the deepest expanded directory, else root.
+  const breadcrumbAnchor = useMemo<string>(() => {
+    if (file !== undefined) {
+      const idx = file.relPath.lastIndexOf('/')
+      return idx === -1 ? '' : file.relPath.slice(0, idx)
+    }
+    if (effectiveWorkspace === null) return ''
+    return deepestExpandedDir(dirs, effectiveWorkspace)
+  }, [file, effectiveWorkspace, dirs])
+  const breadcrumbSegments = useMemo<string[]>(
+    () => splitPath(breadcrumbAnchor),
+    [breadcrumbAnchor],
+  )
+  const rootLabel = workspaces?.find(w => w.workspaceId === effectiveWorkspace)?.title ?? ''
+  const rootPath = workspaces?.find(w => w.workspaceId === effectiveWorkspace)?.path ?? ''
+  const onBreadcrumbJump = useCallback((relDir: string): void => {
+    if (effectiveWorkspace === null) return
+    // Open the clicked segment if not already expanded.
+    if (dirs[dirKey(effectiveWorkspace, relDir)]?.expanded !== true) {
+      toggleDir(effectiveWorkspace, relDir)
+    }
+  }, [effectiveWorkspace, dirs, toggleDir])
+  const getRowIndex = useCallback((relPath: string): number => {
+    return flatRows.findIndex(r => r.relPath === relPath)
+  }, [flatRows])
+
+  const focusRow = useCallback((index: number): void => {
+    if (index < 0 || index >= flatRows.length) return
+    const target = document.querySelector('[data-editor-row-index="' + String(index) + '"]') as HTMLElement | null
+    if (target !== null) target.focus()
+  }, [flatRows])
+  const onTreeKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (flatRows.length === 0) return
+    const current = document.activeElement as HTMLElement | null
+    const currentIndex = current === null ? -1 : Number(current.getAttribute('data-editor-row-index') ?? '-1')
+    const row = currentIndex >= 0 ? flatRows[currentIndex] : undefined
+    const onRow = (action: () => void): void => {
+      event.preventDefault()
+      event.stopPropagation()
+      action()
+    }
+    switch (event.key) {
+      case 'ArrowDown':
+        onRow(() => { focusRow(currentIndex < 0 ? 0 : Math.min(flatRows.length - 1, currentIndex + 1)) })
+        return
+      case 'ArrowUp':
+        onRow(() => { focusRow(currentIndex < 0 ? 0 : Math.max(0, currentIndex - 1)) })
+        return
+      case 'Home':
+        onRow(() => { focusRow(0) })
+        return
+      case 'End':
+        onRow(() => { focusRow(flatRows.length - 1) })
+        return
+      case 'ArrowRight':
+        if (row !== undefined && (row.kind === 'root' || row.kind === 'dir') && effectiveWorkspace !== null) {
+          if (dirs[dirKey(effectiveWorkspace, row.relPath)]?.expanded !== true) {
+            onRow(() => { toggleDir(effectiveWorkspace, row.relPath) })
+            return
+          }
+        }
+        onRow(() => { focusRow(Math.min(flatRows.length - 1, currentIndex + 1)) })
+        return
+      case 'ArrowLeft':
+        if (row !== undefined && row.kind === 'dir' && effectiveWorkspace !== null) {
+          if (dirs[dirKey(effectiveWorkspace, row.relPath)]?.expanded === true) {
+            onRow(() => { toggleDir(effectiveWorkspace, row.relPath) })
+            return
+          }
+          // Jump to parent row.
+          const parentIdx = row.relPath.lastIndexOf('/')
+          const parentRel = parentIdx === -1 ? '' : row.relPath.slice(0, parentIdx)
+          const parentIndex = flatRows.findIndex(r => r.relPath === parentRel)
+          if (parentIndex !== -1) {
+            onRow(() => { focusRow(parentIndex) })
+            return
+          }
+        }
+        if (row !== undefined && row.kind === 'file' && effectiveWorkspace !== null) {
+          const parentRel = row.relPath.includes('/') ? row.relPath.slice(0, row.relPath.lastIndexOf('/')) : ''
+          const parentIndex = flatRows.findIndex(r => r.relPath === parentRel)
+          if (parentIndex !== -1) {
+            onRow(() => { focusRow(parentIndex) })
+            return
+          }
+        }
+        return
+      case 'Enter':
+      case ' ':
+        if (row !== undefined && row.kind === 'file' && effectiveWorkspace !== null) {
+          onRow(() => { openFile(effectiveWorkspace, row.relPath) })
+        } else if (row !== undefined && (row.kind === 'root' || row.kind === 'dir') && effectiveWorkspace !== null) {
+          onRow(() => { toggleDir(effectiveWorkspace, row.relPath) })
+        }
+        return
+    }
+  }, [flatRows, dirs, effectiveWorkspace, toggleDir, openFile, focusRow])
+
   if (fs === undefined || workspaces === undefined || workspaces.length === 0) {
+    const bootWorkspace = workspaces?.[0]?.title
     return (
       <div style={containerStyle} data-editor-state="booting">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <p style={titleStyle}>Editor</p>
-          <p style={hintStyle}>{fs === undefined ? 'The workspace file service is still mounting...' : 'No workspace is registered yet.'}</p>
+        <div style={placeholderContainerStyle}>
+          <p style={placeholderTitleStyle}>File Explorer</p>
+          <p style={placeholderDescStyle}>Browse and read files in the active workspace.</p>
+          {bootWorkspace !== undefined ? <p style={placeholderDescStyle}>Workspace: {bootWorkspace}</p> : null}
+          <p style={placeholderDescStyle}>
+            <span style={placeholderSpinnerStyle} aria-hidden='true' />
+            {fs === undefined ? 'Mounting workspace file service…' : 'No workspace is registered yet.'}
+          </p>
         </div>
       </div>
     )
@@ -197,11 +388,45 @@ export function EditorView(props: ConvViewProps & EditorViewProps): JSX.Element 
             <option key={workspace.workspaceId} value={workspace.workspaceId}>{workspace.title}</option>
           ))}
         </select>
-        <div style={treeScrollStyle}>
+        <div style={breadcrumbStyle} aria-label='Path'>
+          <button
+            className='editor-tree-row'
+            data-editor-row-index='0'
+            tabIndex={0}
+            style={breadcrumbSegStyle}
+            title={rootPath}
+            onClick={() => { onBreadcrumbJump('') }}
+            onKeyDown={onTreeKeyDown}
+          >
+            {rootLabel === '' ? 'workspace' : rootLabel}
+          </button>
+          {breadcrumbSegments.map((segment, i) => {
+            const relUpTo = breadcrumbSegments.slice(0, i + 1).join('/')
+            const isLeaf = i === breadcrumbSegments.length - 1
+            const childFlatIndex = flatRows.findIndex(r => r.relPath === relUpTo)
+            return (
+              <span key={relUpTo} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <span style={breadcrumbSepStyle} aria-hidden='true'>{'›'}</span>
+                <button
+                  className='editor-tree-row'
+                  data-editor-row-index={childFlatIndex === -1 ? 0 : childFlatIndex}
+                  tabIndex={isLeaf ? -1 : 0}
+                  style={isLeaf ? breadcrumbLeafStyle : breadcrumbSegStyle}
+                  onClick={() => { onBreadcrumbJump(relUpTo) }}
+                  onKeyDown={onTreeKeyDown}
+                >
+                  {segment}
+                </button>
+              </span>
+            )
+          })}
+        </div>
+        <div style={treeScrollStyle} role='tree' onKeyDown={onTreeKeyDown}>
           <DirButton
             label={workspaces.find(w => w.workspaceId === effectiveWorkspace)?.title ?? ''}
             title={workspaces.find(w => w.workspaceId === effectiveWorkspace)?.path ?? ''}
             collapsed={dirs[dirKey(effectiveWorkspace, '')]?.expanded !== true}
+            rowIndex={0}
             onClick={() => { toggleDir(effectiveWorkspace, '') }}
           />
           {dirs[dirKey(effectiveWorkspace, '')]?.expanded === true && (
@@ -213,12 +438,20 @@ export function EditorView(props: ConvViewProps & EditorViewProps): JSX.Element 
               selectedRelPath={file?.relPath}
               toggleDir={toggleDir}
               openFile={openFile}
+              getRowIndex={getRowIndex}
             />
           )}
         </div>
       </div>
       <div style={contentStyle}>
-        {file === undefined && <p style={hintStyle}>Select a file to read it.</p>}
+        {file === undefined && (
+          <div style={placeholderContainerStyle}>
+            <p style={placeholderTitleStyle}>File Explorer</p>
+            <p style={placeholderDescStyle}>Browse and read files in the active workspace.</p>
+            <p style={placeholderDescStyle}>Workspace: {workspaces.find(w => w.workspaceId === effectiveWorkspace)?.title ?? ''}</p>
+            <p style={placeholderDescStyle}>Select a file in the tree to read it here.</p>
+          </div>
+        )}
         {file !== undefined && file.state.loading && <p style={hintStyle}>Loading {file.relPath}...</p>}
         {file !== undefined && file.state.error !== undefined && <p style={errorStyle}>{file.state.error}</p>}
         {file !== undefined && file.state.read !== undefined && (
@@ -260,13 +493,15 @@ function ContentPane(props: { relPath: string; size: number; content: string }):
 }
 
 /** One directory chevron row. */
-function DirButton(props: { label: string; title: string; collapsed: boolean; onClick(): void }): JSX.Element {
+function DirButton(props: { label: string; title: string; collapsed: boolean; rowIndex: number; onClick(): void }): JSX.Element {
   return (
     <button
       className='editor-tree-row'
       title={props.title !== '' ? props.title : props.label}
       style={props.collapsed ? rowStyle : rowSelectedStyle}
       aria-expanded={!props.collapsed}
+      tabIndex={0}
+      data-editor-row-index={props.rowIndex}
       onClick={props.onClick}
     >
       {props.collapsed ? COLLAPSED : EXPANDED}
@@ -284,6 +519,7 @@ function Entries(props: {
   selectedRelPath: string | undefined
   toggleDir(workspaceId: string, relDir: string): void
   openFile(workspaceId: string, relPath: string): void
+  getRowIndex(relPath: string): number
 }): JSX.Element {
   const state = props.dirs[dirKey(props.workspaceId, props.relDir)]
   const entries = state?.entries ?? []
@@ -308,6 +544,8 @@ function Entries(props: {
                 title={childRel}
                 style={rowStyle}
                 aria-expanded={expanded}
+                tabIndex={0}
+                data-editor-row-index={props.getRowIndex(childRel)}
                 onClick={() => { props.toggleDir(props.workspaceId, childRel) }}
               >
                 {expanded ? EXPANDED : COLLAPSED}
@@ -330,7 +568,10 @@ function Entries(props: {
             title={childRel}
             aria-selected={isSelected}
             style={isSelected ? rowSelectedStyle : rowStyle}
+            tabIndex={0}
+            data-editor-row-index={props.getRowIndex(childRel)}
             onClick={() => { props.openFile(props.workspaceId, childRel) }}
+            
           >
             {entry.name}
           </button>
