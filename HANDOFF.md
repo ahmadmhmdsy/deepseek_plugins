@@ -1001,3 +1001,26 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
   dangling; root cause + repair in MEMORY §2c — not caused by this change). `tsc`:
   36 pre-existing errors (vendor + the other front's WIP), **zero** mentioning
   `web-file-editor`. The editor's own 31 tests left with the plugin, by design.
+
+### 11a. Fix — the M3 card is unwired; the 0.2.x settings seam cannot host it (2026-10-12)
+
+The one failing suite item is fixed, and the **first diagnosis was partly wrong**: it was not a
+dangling junction that a farm rebuild could re-point. `@deepseek-ai/dsh-settings-file` was
+**removed** in 0.2.1-alpha.2, and `@deepseek-ai/dsh-settings` became "config-schema projection
+and form edits over Cordis profile patches" — `SettingsForms` now offers only
+`describe`/`update`/`replace`, so the card's `ctx.settings.register()` (`src/index.ts:110`)
+cannot run, and its client half needs the removed `SettingsScope` + the renamed
+`settings.general.item` slot. Root cause + evidence:
+`docs/incidents/2026-10-12-settings-seam-redesign-retires-m3-card.md`.
+
+**Applied:** `web-compact-config` removed from the `vitest.config.ts` includes and from
+`cordis.patch.yml` (it could not mount); `dsh-settings-file` removed from
+`WORKSPACE_PACKAGES`/`FALLBACK_SRC_DIRS` (with an `existsSync` guard, because the alias the
+facade injected at a nonexistent directory is what hid the real error); the farm's PACKAGES
+entry made optional; two stale `tsconfig.json` path mappings dropped.
+
+**Verified:** suite **12 files / 90 tests PASS** (was 14 files, 13 passed / 1 failed — the
+retired spec files carried 15 tests and 0 tests); `--dump-config` **exit 0** with
+`compaction-handoff` + `compact-config-command` only; `tsc` unchanged at 36 pre-existing errors
+(vendor + the retired card + the other front's WIP). The M3 sources stay in the repo, unwired —
+deleting the directory outright is the open user decision (TASKS backlog).

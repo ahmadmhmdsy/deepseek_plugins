@@ -32,11 +32,13 @@ durable, reusable lessons and cross-checkout facts.
   older notes about util-values are stale). `deepEqualJson` does NOT: it lives in
   `@deepseek-ai/dsh-settings` (RUN dsh-llm never re-exports it).
 - Base-facade gaps: the RUN checkout's `tsconfig.base.json` has NO bare key for
-  `@deepseek-ai/dsh-settings` / `@deepseek-ai/dsh-settings-file` (only
-  `.../types`). vitest.config.ts carries a checkout-relative `FALLBACK_SRC_DIRS`
-  map (bare + `/src/*` aliases, merged into the longest-first sort) — extend it
-  the same way if another package's bare key is missing, and keep
-  WANTED/WORKSPACE_PACKAGES equal when adding packages.
+  `@deepseek-ai/dsh-settings` (only `.../types`); `dsh-settings-file` is gone entirely
+  in 0.2.1-alpha.2 (see §2c). vitest.config.ts carries a checkout-relative
+  `FALLBACK_SRC_DIRS` map (bare + `/src/*` aliases, merged into the longest-first sort) —
+  extend it the same way if another package's bare key is missing; every entry is
+  `existsSync`-guarded so a package the checkout dropped degrades to *no alias* instead of
+  an alias to a nonexistent directory. Keep WANTED/WORKSPACE_PACKAGES equal when adding
+  packages.
 - `dsh-client-store` and `dsh-client-ui-renderer` exist only on the fork
   (verified 2026-09-10); the link script treats them as optional.
 - The typecheck facade compiles VENDOR sources into the program: type-only `@deepseek-ai/*`
@@ -92,26 +94,35 @@ durable, reusable lessons and cross-checkout facts.
 - `BasicCompactionEngine.Config` (schemastery `z`) has NO `.concat()` — runtime TypeError that breaks whole-file imports; declare a plain additive `z.object`static Config for plugin-level options only.
 - `compactSurfaceRegion` now needs a `recover(error, owner, sourceEventSeqs, abort)` dep (mirror parent body); `CallId` branding: `callIdBrand.ToolCallId ?? callIdBrand.CallId`.
 - New release native file preview supersedes any client chat-click→editor wiring (user decision 2026-09-15).
-### 2c. DSH 0.2.1-alpha.2 drift (found 2026-10-12 while validating the editor retirement)
+### 2c. DSH 0.2.1-alpha.2 settings redesign — and why the M3 card is retired (2026-10-12)
 
-- **`@deepseek-ai/dsh-settings-file` is GONE** in 0.2.1-alpha.2: `packages/settings/` now
-  holds only `settings`, and `tsconfig.base.json` has no path entry for it. The farm's
-  junction `node_modules/@deepseek-ai/dsh-settings-file` is **dangling** (→
-  `deepseek-harness_2/packages/settings/settings-file`, which does not exist), so
-  `web-compact-config/tests/bridge.spec.ts:7` fails with `Cannot find package
-  '@deepseek-ai/dsh-settings-file'` — the ONLY failing item in the workspace suite
-  (13 files / 105 tests pass, verified 2026-10-12). **Not** a regression from any code
-  change: it is resolution drift from the checkout upgrade.
-- Consequence: the legacy `web-compact-config` settings-bridge path cannot be tested on
-  0.2.1-alpha.2 as-is. If it must run there: (a) drop `['dsh-settings-file', true]` from
-  the `scripts/link-node-modules.mjs` PACKAGES list (or mark it optional — a *required*
-  missing entry makes the farm script refuse) AND (b) drop that spec from the
-  `vitest.config.ts` include or port it to the 0.2.x settings surface. **Ping the user
-  first**: rebuilding the farm re-points links across the whole workspace.
-- Resolution rule: a package present in the target's `tsconfig.base.json` paths resolves
-  through the vitest **alias** (no junction needed — `@deepseek-ai/dsh-util-values` does
-  exactly this). `Cannot find package` means the package is absent from BOTH the alias
-  table and a working junction.
+**Fact:** `@deepseek-ai/dsh-settings-file` was **REMOVED** in 0.2.1-alpha.2.
+`packages/settings/` holds `settings` alone (src/{index,redact,schema,types}.ts — no
+`invariant.ts`) and its description is now "config-schema projection and form edits over
+**Cordis profile patches**": settings come from **Loader entry config**, and the legacy
+`settings.yaml` is imported into the profile once and then removed.
+**`SettingsForms` exposes only `describe` / `update` / `replace` — `register()` is gone.**
+
+**Impact:** the whole legacy M3 front (`web-compact-config`: host bridge + settings card) is
+not portable. Verified chain: (1) `src/index.ts:110` calls `ctx.settings.register()` inside
+`ctx.inject(['settings'], …)` → TypeError at mount on any 0.2.x profile; (2) its client half
+imports `SettingsScope` (removed) and registers into `settings.plugin.item` (renamed to
+`settings.general.item`); (3) the bridge's premise — persisting a plugin-registered namespace
+to its own JSON store via `scope.watch` — no longer exists. `dsh-autocompact` is the successor
+and tunes through the native settings surface.
+
+**Resolution (applied 2026-10-12):** M3 retired **in place**, not deleted — removed from the
+`vitest.config.ts` includes and from `cordis.patch.yml`; `dsh-settings-file` dropped from
+`WORKSPACE_PACKAGES` + `FALLBACK_SRC_DIRS` and the farm's PACKAGES entry made optional; the
+two stale `tsconfig.json` mappings removed. Suite: **12 files / 90 tests green** (was 14 files
+with 1 failing). Full record:
+`docs/incidents/2026-10-12-settings-seam-redesign-retires-m3-card.md`. Deleting the
+`web-compact-config` directory outright is an **open user decision** (TASKS backlog).
+
+**Resolution rule (keep):** a specifier resolves through the target's `tsconfig.base.json`
+paths (the vitest alias facade) OR a farm junction; `Cannot find package` means it is in
+neither. An alias pointing at a directory that does not exist *masks* that error — the facade
+is `existsSync`-guarded since 2026-10-12 for exactly this reason.
 
 - Harness delivery seam: `$DSH_HOME` = `C:\Users\Ahmad Mahmoud\.dsh`; `profiles/web/cordis.patch.yml` is the permanent plugin layer ("suite loads on EVERY boot"); client packages reach the suite via symlinks in `profiles/node_modules` (shared fallback, auto-healed to the booting checkout). Live 3080 harness may ALREADY boot from a checkout newer than rc.7 — verify the PID command line before assuming.
 - `/plugins/<id>/client.js` direct GET is NOT the live route; clients serve via `/plugins/??<id>/client.js,+>&rev=` combo assembled per boot — probing the naive URL misleads.

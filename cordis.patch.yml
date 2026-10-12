@@ -16,7 +16,9 @@
         configFile: 'D:/my_deepseek_harness/deepseek_plugins/handoff-config.json'
     - id: compact-config-command
       name: 'file:///D:/my_deepseek_harness/deepseek_plugins/compact-config-command/src/index.ts'
-    - id: web-compact-config
-      name: web-compact-config
-      config:
-        configFile: 'D:/my_deepseek_harness/deepseek_plugins/handoff-config.json'
+    # web-compact-config (M3 card) is deliberately NOT mounted: on 0.2.x its
+    # bridge needs ctx.settings.register(), which the redesigned SettingsForms
+    # dropped (describe/update/replace only), and its client half needs the
+    # removed SettingsScope + the renamed 'settings.general.item' slot. It is
+    # superseded by dsh-autocompact, which tunes through the native settings
+    # surface. See docs/incidents/2026-10-12-settings-seam-redesign-retires-m3-card.md.

@@ -69,7 +69,10 @@ const WANTED = [
   ['schemastery', true], ['cosmokit', true],
   ['dsh-compaction', true], ['dsh-compaction-basic', true], ['dsh-compaction-tool-result-pruner', true],
   ['dsh-llm', true], ['dsh-session', true], ['dsh-token-meter', true], ['dsh-agent', true],
-  ['dsh-commands', true], ['dsh-settings', true], ['dsh-settings-file', true],
+  ['dsh-commands', true], ['dsh-settings', true],
+  // dsh-settings-file was REMOVED in 0.2.1-alpha.2 (settings now project from
+  // Loader entries). Optional so the farm still builds on a checkout lacking it.
+  ['dsh-settings-file', false],
   ['dsh-client-ui-slots', true], ['dsh-client-ui-settings', true], ['dsh-client-ui-settings-plugins', true],
   // dsh-client-runtime was removed in DSH 0.1.6-alpha.1 (packages/client/runtime
   // deleted; SettingsScope moved to dsh-client-ui-settings/client, SnapshotStore

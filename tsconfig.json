@@ -341,8 +341,9 @@
       "@deepseek-ai/dsh-session/surface": ["../../deepseek-harness_2/packages/core/session/src/surface.ts"],
       "@deepseek-ai/dsh-session/types": ["../../deepseek-harness_2/packages/core/session/src/types.ts"],
       "@deepseek-ai/dsh-settings": ["../../deepseek-harness_2/packages/settings/settings/src"],
-      "@deepseek-ai/dsh-settings-file": ["../../deepseek-harness_2/packages/settings/settings-file/src"],
-      "@deepseek-ai/dsh-settings/invariant": ["../../deepseek-harness_2/packages/settings/settings/src/invariant.ts"],
+      // dsh-settings-file and dsh-settings/invariant were REMOVED in 0.2.1-alpha.2
+      // (packages/settings/settings exists alone, with no invariant.ts) — stale
+      // mappings here surface as 'Cannot find module' in tsc.
       "@deepseek-ai/dsh-settings/types": ["../../deepseek-harness_2/packages/settings/settings/src/types.ts"],
       "@deepseek-ai/dsh-shell": ["../../deepseek-harness_2/packages/shell/shell/src"],
       "@deepseek-ai/dsh-shell-env": ["../../deepseek-harness_2/packages/shell/shell-env/src/index.ts"],

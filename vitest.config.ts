@@ -54,7 +54,7 @@ const WORKSPACE_PACKAGES = [
   'cordis', 'cordis-plugin-include', 'cordis-plugin-loader', 'schemastery', 'cosmokit',
   'dsh-compaction', 'dsh-compaction-basic', 'dsh-compaction-tool-result-pruner',
   'dsh-llm', 'dsh-session', 'dsh-token-meter', 'dsh-agent', 'dsh-commands',
-  'dsh-settings', 'dsh-settings-file', 'dsh-session-projection', 'dsh-util-values', 'dsh-client-ui-slots', 'dsh-client-ui-settings',
+  'dsh-settings', 'dsh-session-projection', 'dsh-util-values', 'dsh-client-ui-slots', 'dsh-client-ui-settings',
   'dsh-client-ui-settings-plugins', 'dsh-client-store', 'dsh-client-locale',
   'dsh-client-ui-renderer', 'dsh-workspace',
 ]
@@ -79,12 +79,17 @@ for (const name of WORKSPACE_PACKAGES) {
 // the same layout exists on both checkouts.
 const FALLBACK_SRC_DIRS: Record<string, string> = {
   'dsh-settings': 'packages/settings/settings/src',
-  'dsh-settings-file': 'packages/settings/settings-file/src',
+  // 'dsh-settings-file' was removed from the checkout in 0.2.1-alpha.2 (settings
+  // now project from Loader entries) — do not map a package the checkout no
+  // longer ships.
 }
 const fallbackAliases: { find: string, replacement: string }[] = []
 for (const [name, rel] of Object.entries(FALLBACK_SRC_DIRS)) {
   if (paths['@deepseek-ai/' + name]) continue
   const dir = resolve(FORK, rel)
+  // A dropped package must degrade to "no alias", not to an alias pointing at a
+  // path that does not exist — the latter hides the real resolution error.
+  if (!existsSync(dir)) continue
   fallbackAliases.push({ find: '@deepseek-ai/' + name + '/src/', replacement: dir + '/' })
   fallbackAliases.push({ find: '@deepseek-ai/' + name, replacement: dir })
 }
@@ -145,7 +150,13 @@ export default defineConfig({
     include: [
       'compaction-handoff/tests/**/*.spec.ts',
       'compact-config-command/tests/**/*.spec.ts',
-      'web-compact-config/tests/**/*.spec.ts',
+      // web-compact-config (M3 card + host bridge) is NOT runnable on 0.2.x and
+      // is therefore not run: its bridge calls ctx.settings.register(), which the
+      // redesigned SettingsForms no longer offers (describe/update/replace only),
+      // and its client half needs the removed SettingsScope + the renamed
+      // 'settings.general.item' slot. Superseded by the standalone dsh-autocompact
+      // repo's native-settings tuner. See docs/incidents/
+      // 2026-10-12-settings-seam-redesign-retires-m3-card.md.
       '_template-plugin/tests/**/*.spec.ts',
       'plugin-kit/tests/**/*.spec.ts',
     ],
