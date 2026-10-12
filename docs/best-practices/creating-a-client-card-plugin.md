@@ -198,3 +198,44 @@ reachable and the bundle rebuilt; that checklist owns it.
   module-local names after bundling.
 Record: docs/incidents/2026-09-16-editor-tab-still-mounting-inject-cache.md
 (follow-up §"blank after reload").
+
+## 7. Target drift — the 0.2.x seam, and the portal trap (2026-10-12)
+
+§1/§1b/§1c above describe the **0.1.x** seam and stay valid for those targets. On
+DSH **0.2.1-alpha.2** (`D:\deepseek-harness_2`, verified 2026-10-12 by reading the
+checkout) the settings seam changed — do not copy §1 onto 0.2.x:
+
+| 0.1.x (this guide) | 0.2.1-alpha.2 |
+|---|---|
+| `ctx.settings.register(ns, schema, …)` | Host service `ctx.settings` (`SettingsForms`) projects each **active** entry's schemastery `Config`; a volatile Config needs no registration to get a page |
+| client `ctx.settingsScope.bind({namespace})` | client `ctx.configForms` (`get` / `describe` / `whileServed`) + `ctx.settingsSchema` |
+| card into `settings.plugin.item` | auto-generated page per entry, or a hand-written card into `plugins.item` gated by `configForms.whileServed([ns], …)` |
+| — | tabs come from `settings.plugins.tab` (`configurable` order 0, `all` order 10); the Plugins nav is `settings.section` id `plugins`, order 15 |
+
+Consequences for new work:
+
+- **A volatile `Config` gets a validated, revision-safe form for free.**
+  `volatileForm()` projects only the volatile subtree; the write path
+  (`update`/`replace`/`mutate`) refuses non-volatile paths and stale revisions
+  (`expectedRevision`), restores inherited values on unset, and writes through the
+  same `configEditor.edit` a custom route would use. Hand-roll UI only for what
+  the schema cannot express, and suppress the generated page with
+  `configure({ auto: false })` if you ship your own.
+- **Volatility is a containment rule** — a volatile node cannot nest inside
+  another volatile node or an array element.
+- **`react-dom` is a legal platform external** — the frozen `PLATFORM_MODULES`
+  table (`platform.ts`, seeded by `seed.ts`) includes `react`,
+  `react/jsx-runtime`, `react-dom`, `react-dom/client` and a few `@deepseek-ai`
+  client packages. The `@deepseek-ai/*` **value**-import ban is unchanged.
+- **Layout trap (cost a live round trip):** a panel rendered as an in-flow child
+  of a dock row reflows the composer; `position:fixed`/`absolute` inside the
+  composer is trapped by `backdrop-filter`/`transform` containing blocks and
+  clipped by overflow. Mirror the shipped `DialogPill`/`useStatDialog`:
+  `createPortal(panel, document.body)`, anchor to the trigger's rect, clamp to a
+  12 px viewport margin, cap the height with internal scroll, re-anchor with a
+  `ResizeObserver` on the panel, the trigger **and its row**, and dismiss on
+  `pointerdown` + capture-phase `click` outside plus Escape with focus return.
+  Keep status indicators inline; only panels float.
+
+Worked example, evidence and the trap list: `D:\my_deepseek_harness\dsh-autocompact`
+— `docs/PLUGIN-GUIDE.md`, `docs/incidents/` (14 records), `docs/RETRO.md`.

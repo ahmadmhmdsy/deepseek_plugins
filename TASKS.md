@@ -155,4 +155,24 @@ Next plugin-kit step: the next real plugin consumes the kit (see
 
 ## Backlog / parked (out-of-scope ideas; do not expand current tasks into these)
 
-- (empty — record out-of-scope ideas here instead of expanding the requested scope)
+- (record out-of-scope ideas here instead of expanding the requested scope)
+
+### dsh-autocompact standalone repo (2026-10-12)
+
+The plugin moved to `D:\my_deepseek_harness\dsh-autocompact` (remote `alshahia/dsh-autocompact`,
+branch `main`); its own README/TASKS-less docs carry the status. Open items:
+
+- [ ] **Native settings migration — recorded, NOT started (user decision).** Drop the
+      bespoke dock tuning form + `POST /dsh-autocompact/config` and let the harness render
+      the plugin's volatile `Config` (host `ctx.settings.describe()` → `volatileForm`;
+      Settings → Plugins → Configurable). Decide: label/i18n source (`locale/*.json` vs
+      schema text), pill = status+link vs quick-edit popover, and `configure({auto:false})`
+      if a bespoke page stays. Unverified: generic-form rendering of nested groups + the
+      `models` array. Evidence: `dsh-autocompact/docs/incidents/2026-10-12-native-settings-surface-already-serves-us.md`
+      + README limitation 7.
+- [ ] **Route auth gate.** `GET /dsh-autocompact/status` and `POST /config` answer without
+      the GUI session cookie (verified 2026-10-12). Gate them, or delete the write route
+      with the migration above. README limitation 8.
+- [ ] **`/compact-config` chat command port** — deferred, NEEDS_USER_DECISION.
+- [ ] **User checkpoints owed**: one page refresh (floating tuner) and one harness restart
+      (tuning writes: `write=false` until then).

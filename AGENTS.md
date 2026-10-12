@@ -37,7 +37,7 @@ and fixes the repo-specific conventions CLAUDE.md points here for.
 | Usage (humans) | `README.md` — **does not exist yet**; created in Task 14 | after Task 14 | when commands or usage change |
 | **Incidents** (issue + fix records) | `docs/incidents/<date>-<topic>.md` | when a recorded issue recurs or is referenced | per the standing rule above: every real issue gets its issue+fix record |
 | **Kit spec/plan** (plugin-kit initiative) | `docs/superpowers/{specs,plans}/2026-09-13-plugin-kit*.md` | before any new-plugin work — read with the best-practices docs | only with user approval |
-| **Best practices** (how to create a plugin) | `docs/best-practices/` (`creating-a-source-plugin.md`, `creating-a-client-card-plugin.md`, `plugin-checklist.md`) | before creating ANY new plugin (mandatory reading, next row) | whenever a new experience proves a pattern or trap wrong or extends it — update in the same task that proved it, or record the pending update in TASKS and land it immediately after |
+| **Best practices** (how to create a plugin) | `docs/best-practices/` (`shortest-path-to-a-plugin.md` — the funnel, `creating-a-source-plugin.md`, `creating-a-client-card-plugin.md` (+ its §7 target-drift note), `plugin-checklist.md`) | before creating ANY new plugin (mandatory reading, next row) | whenever a new experience proves a pattern or trap wrong or extends it — update in the same task that proved it, or record the pending update in TASKS and land it immediately after |
 | **Plugin kit** (shared source package) | `plugin-kit/` (`client/chrome.tsx`, `client/settings-form.ts` + `store.ts`, `host/hot-reload-store.ts`, `host/command-mutations.ts` extracted) | before duplicating proved plugin logic — import from the kit instead | when a new plugin makes a module extraction eligible (≥2 proven users), or an extracted module's contract is extended — with its tests migrated, suite green both targets |
 
 The five an agent needs before doing anything: spec+plan (what to build),
@@ -50,7 +50,8 @@ Creating a plugin is a four-resource read followed by a feedback obligation —
 the guides, the template, and the kit only stay useful if every new plugin
 feeds its experience back into them:
 
-1. **Read** `docs/best-practices/` (both guides + `plugin-checklist.md`) and
+1. **Read** `docs/best-practices/` (`shortest-path-to-a-plugin.md` first, then both
+   guides + `plugin-checklist.md`) and
    the kit spec/plan (`docs/superpowers/{specs,plans}/2026-09-13-plugin-kit*.md`),
    with MEMORY.md §1 (junction/alias mechanics) and §2 (drift ledger).
 2. **Start from the copy-and-rename skeleton** `_template-plugin/` (host-side;

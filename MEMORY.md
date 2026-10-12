@@ -337,5 +337,46 @@ The pattern: when a plugin needs a token the kit doesn't have, centralize the va
 
 **They are NOT redundant.** The first is for tests (vitest aliases). The second is for runtime (cordis-loader). A plugin missing from EITHER will either fail tests or fail to mount at boot. Re-run both when adding a plugin. `link-node-modules.mjs` already handles scoped packages; `link-profile-node-modules.mjs` handles all workspace packages by reading their `package.json` name. Together they cover the full delivery path.
 
+## 7. Standalone front + 0.2.x plugin seams (2026-10-12)
+
+The auto-compact plugin now lives in its **own repo**: `D:\my_deepseek_harness\dsh-autocompact`
+(remote `alshahia/dsh-autocompact`, branch **`main`** — `git push origin master` fails with
+`src refspec master does not match any`). It carries the durable knowledge with it: 14
+`docs/incidents/` records, `docs/INCIDENT-INDEX.md`, `docs/RETRO.md` (process failures +
+rules) and `docs/PLUGIN-GUIDE.md` (shortest path + trap list). Live install = profile
+junction (`…\.dsh\profiles\web\node_modules\dsh-autocompact`) + one patch row.
+
+Verified on DSH **0.2.1-alpha.2** (`D:\deepseek-harness_2`) by reading the checkout:
+
+- The settings seam replaced `settingsScope` / `ctx.settings.register`:
+  host `ctx.settings` (`SettingsForms`, `packages/settings/settings/src/index.ts`)
+  projects each **active** entry's schemastery `Config` through `volatileForm` into
+  a form keyed by `entry.options.id`; writes are `update`/`replace`/`mutate` with
+  `expectedRevision` conflict refusal, an `isVolatilePath` gate, unset→inherited,
+  and the write goes through the SAME `configEditor.edit`. `configure({ auto: false })`
+  suppresses the generated page. Client services: `ctx.configForms`
+  (`get`/`describe`/`whileServed`) + `ctx.settingsSchema`; bespoke cards register into
+  `plugins.item` gated by `whileServed`. Tabs: `settings.plugins.tab` (`configurable`
+  order 0, `all` order 10); nav: `settings.section` id `plugins` order 15 (ui-settings-plugins).
+- Frozen platform module table (`client/web/src/platform.ts`, seeded by `seed.ts`):
+  `react`, `react/jsx-runtime`, `react-dom`, `react-dom/client`, `@deepseek-ai/cordis`,
+  `dsh-client-store`, `dsh-client-ui-slots`, `dsh-client-ui-primitives`,
+  `dsh-client-ui-dockkit`. **`react-dom` is a legal external**; `@deepseek-ai/*` VALUE
+  imports stay forbidden.
+- Live application matrix: composition/patch row + config values = live; client bundle =
+  next **page load**; host `src/*.ts` = one **harness restart**.
+- `configEditor.entries()` rows are **Loader nodes** (patch id in `options.id`).
+- Client layout trap that cost a live round trip: an in-flow child of
+  `conversation.composer.dock` reflows the composer (bar jumps to mid-page), and
+  `position:fixed` inside the composer is trapped by `backdrop-filter`/`transform`
+  containing blocks → `createPortal(panel, document.body)`, z-index 1100, 12 px clamp,
+  `max-height` + internal scroll, `ResizeObserver` on panel + anchor + row, dismissal on
+  `pointerdown` + capture `click` + Escape.
+- `ctx.webServer` routes are NOT behind the GUI session gate (verified:
+  `GET /dsh-autocompact/status` → 200 with no cookie). Record such routes as limitations.
+
+Guide pointer: `docs/best-practices/shortest-path-to-a-plugin.md` (funnel) +
+`creating-a-client-card-plugin.md` §7 (0.2.x drift table).
+
 
 ---

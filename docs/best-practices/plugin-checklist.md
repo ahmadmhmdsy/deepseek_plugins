@@ -72,3 +72,31 @@ Every claim in your final report carries its validation method and its exact
 evidence (command output, file counts, mtimes). PASS / FAIL / SKIPPED /
 BLOCKED / NEEDS_USER_DECISION — optimistic claims are the failure mode this
 checklist exists to prevent (CLAUDE.md §10, §16).
+
+## 7. Added 2026-10-12 (after a live UI regression and three documentation drifts)
+
+- [ ] **UI/geometry changes**: the shape was copied from a shipped occupant, not
+      invented — and the visual result is reported as a USER CHECKPOINT, never as
+      verified. With no DOM test environment, write "structurally verified;
+      visual check pending" in the same sentence as the fix.
+- [ ] **Structural invariants a regression would break are asserted** (portal
+      target, `position:fixed` + z-index, height cap, observers, dismissal
+      paths) — not pixels.
+- [ ] **No platform fact is asserted in a test comment or a doc without a
+      file/line source** (platform module table, slot names, service keys). "The
+      shell only guarantees X" is a claim about the checkout, not about your
+      imports.
+- [ ] **After a behavior change, grep the tree for the old number and the old
+      wording** (test counts, "inline panel", externals lists) — in the same
+      commit, including comments inside the file you changed.
+- [ ] **A diagnostic that contradicts itself gets a probe before a theory.** A
+      404 on a bundle route, or a capability flag reading false, is not evidence
+      until the live shape is printed.
+- [ ] **Known gaps found during the work go into the README's limitations at that
+      moment** (e.g. routes answering without the GUI session cookie), not only
+      into session notes.
+- [ ] **Evidence class named per claim**: code read / unit test / typecheck /
+      composition check / live probe / user checkpoint.
+- [ ] **First push to a NEW repo**: confirm the branch
+      (`git rev-parse --abbrev-ref HEAD`). `src refspec <x> does not match any`
+      means the ref name is wrong, not the remote.

@@ -928,3 +928,30 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
   harness-runtime edits (3083 boot toggled `file-editor.enabled=false` and
   rewrote `handoff.trigger.tokens=100000`); NOT committed by me — leave for
   the user's review.
+
+## 10. Standalone front — the auto-compact plugin moved to its own repo (2026-10-12)
+
+- **State**: the plugin now lives at `D:\my_deepseek_harness\dsh-autocompact` (remote
+  `alshahia/dsh-autocompact`, branch **`main`** — `git push origin master` fails with
+  `src refspec master does not match any`), extracted from this workspace so it can be
+  updated and imported on its own. Live install = profile junction
+  (`…\.dsh\profiles\web\node_modules\dsh-autocompact`) + one patch row; the legacy
+  `compaction-basic`, `compaction-handoff` and `compact-config-command` rows are disabled
+  in the live `web` profile.
+- **Target**: DSH `0.2.1-alpha.2` at `D:\deepseek-harness_2`. The Web GUI on 3080 hosts
+  this agent session — never restarted or replaced by an agent.
+- **Verification matrix (2026-10-12)**: host half PASS (engine + two routes); live route
+  PASS (`GET /dsh-autocompact/status` → 200); legacy retirement PASS; client half
+  registered in the live graph PASS; floating tuner PASS in source/tests with the
+  **visual check owed by the user** (one page refresh); GUI tuning Save still
+  `write=false` until ONE harness restart (the `findRow` Loader-node fix is host code);
+  the two routes are not behind the GUI session gate (README limitation 8).
+- **Docs moved with it**: 14 incident records + `docs/INCIDENT-INDEX.md` (one-page
+  catalog), `docs/RETRO.md` (process failures → rules) and `docs/PLUGIN-GUIDE.md`
+  (shortest path + trap list). This workspace gained
+  `docs/best-practices/shortest-path-to-a-plugin.md` plus a §7 target-drift section in
+  `creating-a-client-card-plugin.md` and four new checklist items in
+  `plugin-checklist.md`, so the map stays honest for 0.2.x work.
+- **Not touched** (uncommitted work left for its owner): the `web-file-editor` /
+  `plugin-kit theme-bus` changes, and the harness-runtime edits in
+  `file-editor-config.json` + `handoff-config.json`.
