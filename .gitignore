@@ -13,3 +13,7 @@ scripts/.dsh-target.txt
 screenshots/
 .compat-test/
 .archive/
+
+# Cache junk a tool created by using an UNEXPANDED `%SystemDrive%` env var in a relative
+# path (it holds ProgramData\...\Windows\Caches). Not project content — never commit it.
+%SystemDrive%/

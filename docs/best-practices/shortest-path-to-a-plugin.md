@@ -7,6 +7,13 @@ plugin that proved it, and travels with that repo:
 (target DSH `0.2.1-alpha.2`). Its `docs/incidents/` holds the record behind every
 trap below, and `docs/INCIDENT-INDEX.md` is the one-page catalog.
 
+**Universal step stone:** this guide, the 14 records behind its traps, their catalog and the
+process retro are collected for reuse by *any* future plugin in
+`D:\my_deepseek_harness\dsh-plugin-playbook\` (start at its `README.md` — it carries a
+symptom→record table). This repo keeps its own copy of the guide and **points** there; the
+shared copy is refreshed from the source repos, so a newly proven plugin-agnostic trap should
+be recorded in both places.
+
 The habit that saves the most time: **find the shipped implementation of the same
 thing and copy its shape** before writing anything.
 
@@ -66,5 +73,7 @@ a **volatile** `Config` gets a native settings page for free (host `ctx.settings
 → `volatileForm`; client `ctx.configForms` + `ctx.settingsSchema`; bespoke cards
 go into `plugins.item` gated by `whileServed`). Read
 `creating-a-client-card-plugin.md` §7 before copying its §1 onto a 0.2.x target.
+The full root cause, the removed package and the retirement of the legacy card:
+`docs/incidents/2026-10-12-settings-seam-redesign-retires-m3-card.md`.
 
 When something looks impossible, check the incident index before re-deriving it.
