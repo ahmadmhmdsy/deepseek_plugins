@@ -4,9 +4,19 @@ TASKS.md owns the **live status**; [HANDOFF.md](./HANDOFF.md) owns the narrative
 and evidence; the plan (`docs/superpowers/plans/2026-09-10-auto-compact-handoff.md`)
 owns the approved task definitions.
 
-**Last updated:** 2026-09-16 16:00 · **Active front:** Editor UX polish — M-D.1..6 done (items 14+15 LIVE-VERIFIED via 3083 after R5 closure). Item 16 deferred (FE-M-D.6.16). M-D.7..8 pending user sign-off. **R5 closed** by scripts/link-profile-node-modules.mjs.
+**Last updated:** 2026-10-12 14:10 · **Active front:** none in this workspace — the auto-compact plugin now lives in its own repo (`dsh-autocompact`) and the File Editor front was RETIRED (native replacement; see the banner below).
 
-## File Editor plugin (Queued — direction approved 2026-09-14, plan: docs/superpowers/plans/2026-09-14-file-editor-plugin.md)
+## File Editor plugin — RETIRED 2026-10-12 (was: queued; direction approved 2026-09-14, plan: docs/superpowers/plans/2026-09-14-file-editor-plugin.md)
+
+**RETIRED 2026-10-12 (user decision).** `web-file-editor/` was deleted from this repo:
+DSH 0.2.1-alpha.2 ships the native replacement — right-Sidebar file tree
+(`@deepseek-ai/dsh-client-ui-sidebar-files`) + document preview
+(`@deepseek-ai/dsh-client-ui-sidebar-documentpreview`: Markdown, code, images, PDF, HTML,
+Office/spreadsheets). The uncommitted WIP at removal is archived at
+`.archive/web-file-editor-wip-2026-10-12/` (gitignored, with a restore recipe) and the
+tracked code stays in history. **Everything in this section and every FE-M-* entry below is
+historical.** Deliberately left in place: `file-editor-config.json` and three uncommitted
+`plugin-kit` theme files (see Backlog).
 
 - **FE-M-A — View-only Monaco editor tab** `in_progress` —
   - [x] FE-M-A Task 1 — tab path de-risk: conversation.view placeholder registered (id 'editor', order 15); bundle 3.03 kB; suite 106/106 (14 files) on RUN and DEV; tsc zero NEW errors (local slot shim; vendor-baseline noise documented in HANDOFF §8g); patch rows + profile delivery junction + composition check PASS — commit 364043f. **Live-GUI tab = user checkpoint (needs a harness boot of the web profile; never restart the running harness ourselves).**
@@ -113,7 +123,7 @@ plugin-kit so future plugins import/inherit instead of re-deriving.
 Next plugin-kit step: the next real plugin consumes the kit (see
 `_template-plugin/README.md` and docs/best-practices/).
 
-- **Task FE-M-F — Editor tab blank-after-reload fix (inject gate + namespace access)** `done`
+- **Task FE-M-F — Editor tab blank-after-reload fix (inject gate + namespace access)** `done` **[RETIRED 2026-10-12 — historical]**
   (2026-09-16 14:05) — user reported blank. Root causes: inject-gated ctx reads
   (added 'remote'/'workspaces' to `inject` + package features), mounted
   namespaces reach via `ctx.get('remote.'+ns)` (never inject-declared), and a
@@ -123,7 +133,7 @@ Next plugin-kit step: the next real plugin consumes the kit (see
   Record: docs/incidents/2026-09-16-editor-tab-still-mounting-inject-cache.md
   follow-up. Live 3080 re-verify remains a user checkpoint (Ctrl+F5).
 
-- **Task FE-M-D — Editor tab UX polish (UX review milestone)** `in_progress`
+- **Task FE-M-D — Editor tab UX polish (UX review milestone)** `retired` **[2026-10-12 — historical]**
   (2026-09-16 14:09; **M-D.1 done 2026-09-16 14:18**) — milestone added to the
   file-editor plan in `docs/superpowers/plans/2026-09-14-file-editor-plugin.md`
   §M-D after the thorough UI/UX review. Eight sub-batches (M-D.1 … M-D.7)
@@ -144,18 +154,17 @@ Next plugin-kit step: the next real plugin consumes the kit (see
     tests PASS; agent-owned 3083 visual confirm (Editor tab → workspace
     dropdown → tree expand → hover/focus style tag in DOM → empty-state
     hint); user's live 3080 Ctrl+F5 = remaining checkpoint.
-  - [ ] FE-M-D.2 — breadcrumb of relative path above the tree header.
-  - [ ] FE-M-D.3 — keyboard nav (Arrow / Home / End / Enter / Space).
-  - [ ] FE-M-D.4 — identity placeholder + per-row metadata (size, mtime).
-  - [ ] FE-M-D.5 — content-pane flex + Monaco flex + 13px fontSize +
-    indent guides + kit `Select` shell.
-  - [ ] FE-M-D.6 — accent pill tone + `Open Editor tab` button (gated by R1).
-  - [ ] FE-M-D.7 — Monaco theme awareness (gated by R2 spike).
-  - [ ] FE-M-D.8 — Read-only pill in header.
+  - [x] ~~FE-M-D.2 … FE-M-D.8~~ — **MOOT** (front retired 2026-10-12; the native Sidebar
+    tree + document preview cover this ground). Listed for history only; no work owed.
 
 ## Backlog / parked (out-of-scope ideas; do not expand current tasks into these)
 
 - (record out-of-scope ideas here instead of expanding the requested scope)
+- **File-Editor leftovers after the 2026-10-12 retirement** (decide; do not expand):
+  `file-editor-config.json` is orphaned (kept — it holds harness-runtime edits);
+  `plugin-kit/src/client/{theme-bus.ts,use-theme-snapshot.tsx}` +
+  `plugin-kit/tests/theme-bus.spec.ts` are uncommitted WIP that only the retired editor
+  consumed — keep as kit material (then commit) or drop.
 
 ### dsh-autocompact standalone repo (2026-10-12)
 

@@ -148,7 +148,6 @@ export default defineConfig({
       'web-compact-config/tests/**/*.spec.ts',
       '_template-plugin/tests/**/*.spec.ts',
       'plugin-kit/tests/**/*.spec.ts',
-      'web-file-editor/tests/**/*.spec.ts',
     ],
   },
 })

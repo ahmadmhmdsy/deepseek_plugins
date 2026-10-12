@@ -12,3 +12,4 @@ scripts/.dsh-target.txt
 .dsh-test/
 screenshots/
 .compat-test/
+.archive/

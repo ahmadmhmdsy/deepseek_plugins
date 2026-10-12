@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
  * `name:` values via Node's package resolution. The process cwd's
  * node_modules (the workspace junction farm) only links @deepseek-ai/*
  * packages (per scripts/link-node-modules.mjs); non-scoped workspace
- * plugins like `web-file-editor` live at `<workspace>/<name>` but never
+ * plugins (e.g. a client-card package) live at `<workspace>/<name>` but never
  * reach the resolver. The profile-level node_modules
  * ($DSH_HOME/profiles/node_modules) is the host healer's view and the
  * loader's effective fallback; once a junction lands there, every boot

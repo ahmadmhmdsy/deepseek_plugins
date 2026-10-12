@@ -955,3 +955,41 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
 - **Not touched** (uncommitted work left for its owner): the `web-file-editor` /
   `plugin-kit theme-bus` changes, and the harness-runtime edits in
   `file-editor-config.json` + `handoff-config.json`.
+
+## 11. File Editor front RETIRED + the plugin repo is remote-installable (2026-10-12)
+
+- **Decision:** the user asked to clean `web-file-editor` because the new harness ships a
+  better one. Verified BEFORE deleting: the native replacement is
+  `@deepseek-ai/dsh-client-ui-sidebar-files` (right-Sidebar workspace tree over the
+  `workspaceFiles` Remote) plus `@deepseek-ai/dsh-client-ui-sidebar-documentpreview`
+  (Markdown, code, images, PDF, HTML, Office/spreadsheets), both in the target checkout.
+  The plugin was **not mounted live** (its rows are commented out in
+  `profiles/web/cordis.patch.yml`; no junction in `profiles/web/node_modules`), so removal
+  could not touch the running harness.
+- **Removed in one commit:** 25 tracked files (104 KB) via `git rm -r -f web-file-editor`,
+  the gitignored 8.7 MB `lib/client.js`, and the stale shared-fallback junction
+  `$DSH_HOME/profiles/node_modules/web-file-editor` (`cmd /c rmdir` — MEMORY L-8's
+  documented removal). Wiring cleaned in the same commit: the `web-file-editor` row in
+  `cordis.patch.yml`, its vitest include line, the `monaco-editor` `NPM_DEPS` entry (that
+  bundle was its only consumer) and two stale script comments.
+- **Uncommitted WIP preserved, not destroyed:** the four working-state files
+  (`src/client/{EditorView.tsx,index.ts,workbench.ts,theme.ts}`) are archived at
+  `.archive/web-file-editor-wip-2026-10-12/` (gitignored; its README carries the restore
+  recipe); tracked code is recoverable with `git checkout <parent-sha> -- web-file-editor`.
+  `file-editor-config.json` and the three uncommitted `plugin-kit` theme files were left in
+  place — decision pending, TASKS backlog.
+- **Remote install to another machine — VERIFIED, not inferred (the user's second
+  question).** The repo is public (anonymous `https://github.com/alshahia/dsh-autocompact`
+  → HTTP 200). An isolated probe in `%TEMP%\dsh-autocompact-install-probe` ran
+  `pnpm add github:alshahia/dsh-autocompact` → `+ dsh-autocompact 0.3.2` in 4.9 s, landing
+  `src/index.ts`, `client.js`, `cordis.patch.yml`, `locale/` (2 files), `icon.svg`,
+  `package.json`. The harness's own installer (`packages/boot/plugin-manager`,
+  `installBundle(spec)`) accepts the same specs both from the GUI install dialog
+  (`ui-plugin-manager`; its field example is `https://github.com/author/dsh-plugin`) and
+  from the `plugin_manager` tool's `install_bundle`. Requirements already met: a
+  `dsh.bundle.patch` (ours is a name-based `cordis.patch.yml`, no machine paths), no build
+  step or install scripts (so no `pendingBuilds` approval prompt), and no
+  `peerDependencies` (so no `incompatible-version` refusal). `private: true` blocks npm
+  *publishing* only — a git spec installs regardless. A registry install would be the next
+  step if wanted: drop `private`, add `publishConfig`, publish, then
+  `install_bundle('dsh-autocompact')`.

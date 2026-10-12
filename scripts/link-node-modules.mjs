@@ -86,11 +86,6 @@ const NPM_DEPS = [
   { name: 'react', from: 'packages/client/ui-settings-plugins' },
   { name: '@types/react', from: 'packages/client/ui-settings-plugins' },
   { name: '@types/node', from: '' },
-  // Build-time dep of the web-file-editor client bundle only (no vitest test
-  // imports the monaco-bearing module). The 0.1.6-alpha.1 checkout does not
-  // install it (the two older checkouts carry it as a user-approved root
-  // devDependency); skipping keeps the farm buildable there.
-  { name: 'monaco-editor', from: '', optional: true },
 ]
 
 /** Root dev tools used directly from this workspace. */

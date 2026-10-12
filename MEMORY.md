@@ -220,7 +220,15 @@ durable, reusable lessons and cross-checkout facts.
   sections are written as whole-section objects (`set('trigger', {...})`); the
   host `applyPathOp` accepts object values, and object layers merge recursively.
 
-## 6. File Editor (Monaco) plugin — durable facts & decisions (2026-09-14)
+## 6. File Editor (Monaco) plugin — durable facts & decisions (2026-09-14) · RETIRED 2026-10-12
+
+> **RETIRED 2026-10-12.** `web-file-editor/` was deleted from this repo after the user
+> confirmed DSH 0.2.1-alpha.2 ships a better native one (right-Sidebar tree
+> `@deepseek-ai/dsh-client-ui-sidebar-files` + `@deepseek-ai/dsh-client-ui-sidebar-documentpreview`
+> for Markdown/code/images/PDF/Office). The facts below stay valid as **plugin-platform
+> knowledge** (slot inject memoization, workspace-files Remote, Monaco-in-one-bundle,
+> tsdown traps) — they are no longer an active front. Uncommitted WIP archived at
+> `.archive/web-file-editor-wip-2026-10-12/`; tracked code recoverable from git history.
 
 - **The top-level tab bar is the `conversation.view` slot** (DEV fork verified by
   grep). Registration pattern to copy: ui-trajectory/src/client/index.ts:77-106 —
