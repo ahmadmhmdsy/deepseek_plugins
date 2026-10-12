@@ -165,6 +165,11 @@ Next plugin-kit step: the next real plugin consumes the kit (see
   `plugin-kit/src/client/{theme-bus.ts,use-theme-snapshot.tsx}` +
   `plugin-kit/tests/theme-bus.spec.ts` are uncommitted WIP that only the retired editor
   consumed — keep as kit material (then commit) or drop.
+- **Legacy suite vs 0.2.1-alpha.2 drift** (found 2026-10-12 while retiring the editor):
+  the workspace suite is 13 files / 105 tests green with ONE pre-existing failure —
+  `web-compact-config/tests/bridge.spec.ts` cannot resolve `@deepseek-ai/dsh-settings-file`
+  (package removed in 0.2.1-alpha.2; the farm junction is dangling). Repair = farm rebuild
+  (needs a user ping) + drop/port that spec. Root cause + exact steps: MEMORY §2c.
 
 ### dsh-autocompact standalone repo (2026-10-12)
 

@@ -92,6 +92,26 @@ durable, reusable lessons and cross-checkout facts.
 - `BasicCompactionEngine.Config` (schemastery `z`) has NO `.concat()` — runtime TypeError that breaks whole-file imports; declare a plain additive `z.object`static Config for plugin-level options only.
 - `compactSurfaceRegion` now needs a `recover(error, owner, sourceEventSeqs, abort)` dep (mirror parent body); `CallId` branding: `callIdBrand.ToolCallId ?? callIdBrand.CallId`.
 - New release native file preview supersedes any client chat-click→editor wiring (user decision 2026-09-15).
+### 2c. DSH 0.2.1-alpha.2 drift (found 2026-10-12 while validating the editor retirement)
+
+- **`@deepseek-ai/dsh-settings-file` is GONE** in 0.2.1-alpha.2: `packages/settings/` now
+  holds only `settings`, and `tsconfig.base.json` has no path entry for it. The farm's
+  junction `node_modules/@deepseek-ai/dsh-settings-file` is **dangling** (→
+  `deepseek-harness_2/packages/settings/settings-file`, which does not exist), so
+  `web-compact-config/tests/bridge.spec.ts:7` fails with `Cannot find package
+  '@deepseek-ai/dsh-settings-file'` — the ONLY failing item in the workspace suite
+  (13 files / 105 tests pass, verified 2026-10-12). **Not** a regression from any code
+  change: it is resolution drift from the checkout upgrade.
+- Consequence: the legacy `web-compact-config` settings-bridge path cannot be tested on
+  0.2.1-alpha.2 as-is. If it must run there: (a) drop `['dsh-settings-file', true]` from
+  the `scripts/link-node-modules.mjs` PACKAGES list (or mark it optional — a *required*
+  missing entry makes the farm script refuse) AND (b) drop that spec from the
+  `vitest.config.ts` include or port it to the 0.2.x settings surface. **Ping the user
+  first**: rebuilding the farm re-points links across the whole workspace.
+- Resolution rule: a package present in the target's `tsconfig.base.json` paths resolves
+  through the vitest **alias** (no junction needed — `@deepseek-ai/dsh-util-values` does
+  exactly this). `Cannot find package` means the package is absent from BOTH the alias
+  table and a working junction.
 
 - Harness delivery seam: `$DSH_HOME` = `C:\Users\Ahmad Mahmoud\.dsh`; `profiles/web/cordis.patch.yml` is the permanent plugin layer ("suite loads on EVERY boot"); client packages reach the suite via symlinks in `profiles/node_modules` (shared fallback, auto-healed to the booting checkout). Live 3080 harness may ALREADY boot from a checkout newer than rc.7 — verify the PID command line before assuming.
 - `/plugins/<id>/client.js` direct GET is NOT the live route; clients serve via `/plugins/??<id>/client.js,+>&rev=` combo assembled per boot — probing the naive URL misleads.

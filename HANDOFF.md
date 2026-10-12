@@ -993,3 +993,11 @@ Then FE-M-B (write: host fs verbs, save/dirty/conflict flow, create/rename/delet
   *publishing* only — a git spec installs regardless. A registry install would be the next
   step if wanted: drop `private`, add `publishConfig`, publish, then
   `install_bundle('dsh-autocompact')`.
+- **Validation of the retirement (2026-10-12):** `--dump-config` exit 0 with the patch now
+  mounting `compaction-handoff` + `compact-config-command` + `web-compact-config` and no
+  `web-file-editor` row — **PASS**. Workspace suite: 13 files / 105 tests **PASS**, plus
+  1 **PRE-EXISTING** failing file (`web-compact-config/tests/bridge.spec.ts` →
+  `@deepseek-ai/dsh-settings-file` was removed in 0.2.1-alpha.2 and the farm junction is
+  dangling; root cause + repair in MEMORY §2c — not caused by this change). `tsc`:
+  36 pre-existing errors (vendor + the other front's WIP), **zero** mentioning
+  `web-file-editor`. The editor's own 31 tests left with the plugin, by design.
